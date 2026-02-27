@@ -11,7 +11,7 @@ private let kDirectObject     = UInt32(0x2d2d2d2d)
 // MARK: - Config
 
 struct Rule: Codable {
-    let match: String
+    let match: String?       // nil or "" = match any URL
     let sourceApp: String?   // optional: case-insensitive substring of bundle ID or app name
     let profile: String?     // nil = open in Chrome without specifying a profile
 }
@@ -59,15 +59,18 @@ func routeURL(_ urlString: String, source: NSRunningApplication?, config: Config
     let fullURL = urlString.lowercased()
 
     for rule in config.rules {
-        let pattern = rule.match
         let urlMatched: Bool
-        if pattern.hasPrefix("re:") {
-            let regex = String(pattern.dropFirst(3))
-            urlMatched = urlString.range(of: regex, options: [.regularExpression, .caseInsensitive]) != nil
-        } else if pattern.contains("/") || pattern.contains("?") {
-            urlMatched = fullURL.contains(pattern.lowercased())
+        if let pattern = rule.match, !pattern.isEmpty {
+            if pattern.hasPrefix("re:") {
+                let regex = String(pattern.dropFirst(3))
+                urlMatched = urlString.range(of: regex, options: [.regularExpression, .caseInsensitive]) != nil
+            } else if pattern.contains("/") || pattern.contains("?") {
+                urlMatched = fullURL.contains(pattern.lowercased())
+            } else {
+                urlMatched = host.contains(pattern.lowercased())
+            }
         } else {
-            urlMatched = host.contains(pattern.lowercased())
+            urlMatched = true  // nil or "" = match any URL
         }
         guard urlMatched else { continue }
 
@@ -78,6 +81,7 @@ func routeURL(_ urlString: String, source: NSRunningApplication?, config: Config
             guard bundleID.contains(f) || appName.contains(f) else { continue }
         }
 
+        let pattern = rule.match ?? "*"
         let dest = rule.profile ?? "(no profile)"
         logURL("Rule '\(pattern)'\(rule.sourceApp.map { " (from '\($0)')" } ?? "") matched \(urlString) → \(dest)")
         return rule.profile

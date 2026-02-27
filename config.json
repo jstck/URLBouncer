@@ -6,8 +6,9 @@
   "rules": [
     {"match": "github.com",                              "profile": "work"},
     {"match": "docs.google.com", "sourceApp": "Slack",   "profile": "work"},
+    {"sourceApp": "WhatsApp",   "profile": "personal"},
     {"match": "docs.google.com/presentation",            "profile": "work"},
     {"match": "youtube.com",                             "profile": "personal"}
   ],
-  "defaultProfile": "personal"
+  "defaultProfile": null
 }

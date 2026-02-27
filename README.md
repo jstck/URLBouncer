@@ -11,7 +11,7 @@ cookies and logins and history separate between them.
 
 ## Requirements
 
-- macOS 12+
+- macOS 15 (Sequoia) or later
 - Xcode Command Line Tools (`xcode-select --install`)
 - Google Chrome
 
@@ -50,14 +50,16 @@ Your config file lives at `~/.config/urlbouncer/config.json`. The easiest way to
     "personal": "Profile 2"
   },
   "rules": [
-    {"match": "github.com",                               "profile": "work"},
-    {"match": "docs.google.com", "sourceApp": "Slack",    "profile": "work"},
-    {"match": "docs.google.com", "sourceApp": "Telegram", "profile": "personal"},
-    {"match": "youtube.com",                              "profile": "personal"}
+    {"match": "github.com",                              "profile": "work"},
+    {"match": "docs.google.com", "sourceApp": "Slack",   "profile": "work"},
+    {"sourceApp": "WhatsApp",                            "profile": "personal"},
+    {"match": "youtube.com",                             "profile": "personal"}
   ],
-  "defaultProfile": "personal"
+  "defaultProfile": null
 }
 ```
+
+Set `"profile": null` (or `"defaultProfile": null`) to open URLs in Chrome without specifying a profile — Chrome will use whatever window was last active.
 
 The `profiles` map is optional — you can still write `"profile": "Profile 1"` directly in rules if you prefer.
 
@@ -70,6 +72,7 @@ Rules are matched top-to-bottom; the first match wins. No restart is needed afte
 | `"github.com"` | Hostname (case-insensitive substring) |
 | `"github.com/myorg/"` | Full URL (pattern contains `/`) |
 | `"re:^https://meet\\.google\\.com/"` | Full URL regex (prefix `re:`) |
+| omitted or `null` | Any URL (useful combined with `sourceApp`) |
 
 ### Source app filtering
 
