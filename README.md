@@ -98,6 +98,7 @@ tail -f ~/Library/Logs/URLBouncer/urlbouncer.log
 ## Auto-start on login
 
 Go to **System Settings → General → Login Items** and add `/Applications/URLBouncer.app`.
+It doesn't relly need this, the app will get launched if not running whenever a URL is opened.
 
 ## Updating after config or code changes
 
