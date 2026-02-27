@@ -148,6 +148,8 @@ func logURL(_ message: String) {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var urlLogItem: NSMenuItem!
+    private var isHandlingAlert = false
+    private var previousFrontmostApp: NSRunningApplication?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Must register before the run loop starts so cold-launch URLs are not missed
@@ -164,6 +166,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         log("URLBouncer started")
     }
 
+    func applicationWillBecomeActive(_ notification: Notification) {
+        // Capture whoever is active now, before URLBouncer steals focus
+        let prev = NSWorkspace.shared.frontmostApplication
+        if prev?.bundleIdentifier != Bundle.main.bundleIdentifier {
+            previousFrontmostApp = prev
+        }
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        guard !isHandlingAlert else { return }
+        if let prev = previousFrontmostApp {
+            NSApp.yieldActivation(to: prev)
+        }
+    }
+
     @objc func handleGetURL(_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor) {
         guard let urlString = event.paramDescriptor(forKeyword: kDirectObject)?.stringValue else {
             log("GetURL event: missing URL")
@@ -173,11 +190,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let config  = loadConfig()
         let profile = routeURL(urlString, config: config)
         openInChrome(url: urlString, profile: profile)
-        if #available(macOS 14.0, *) {
-            NSApp.yieldActivation(toApplicationWithBundleIdentifier: "com.google.Chrome")
-        } else {
-            NSApp.deactivate()
-        }
     }
 
     // MARK: Menu bar
@@ -268,13 +280,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func alert(title: String, message: String) {
+        isHandlingAlert = true
         NSApp.activate(ignoringOtherApps: true)
         let a = NSAlert()
         a.messageText = title
         a.informativeText = message
         a.addButton(withTitle: "OK")
         a.runModal()
-        NSApp.deactivate()
+        isHandlingAlert = false
+        if let prev = previousFrontmostApp {
+            NSApp.yieldActivation(to: prev)
+        }
     }
 }
 
@@ -282,7 +298,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 setupLogging()
 let app = NSApplication.shared
-app.setActivationPolicy(.accessory)  // No Dock icon, no Cmd+Tab, but visible in browser picker
+app.setActivationPolicy(.accessory)  // Belt-and-suspenders; LSUIElement=true in Info.plist is the primary guard
 let delegate = AppDelegate()
 app.delegate = delegate
 app.run()

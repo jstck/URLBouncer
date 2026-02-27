@@ -23,7 +23,10 @@
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
 
-    <!-- Makes the app appear in the "Default web browser" picker -->
+    <!-- Prevents the app from appearing in the Dock and Cmd+Tab -->
+    <key>LSUIElement</key>
+    <true/>
+
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.productivity</string>
 
@@ -53,6 +56,6 @@
     <string>NSApplication</string>
 
     <key>LSMinimumSystemVersion</key>
-    <string>12.0</string>
+    <string>15.0</string>
 </dict>
 </plist>
