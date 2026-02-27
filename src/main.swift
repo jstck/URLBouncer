@@ -173,6 +173,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let config  = loadConfig()
         let profile = routeURL(urlString, config: config)
         openInChrome(url: urlString, profile: profile)
+        if #available(macOS 14.0, *) {
+            NSApp.yieldActivation(toApplicationWithBundleIdentifier: "com.google.Chrome")
+        } else {
+            NSApp.deactivate()
+        }
     }
 
     // MARK: Menu bar
@@ -269,6 +274,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         a.informativeText = message
         a.addButton(withTitle: "OK")
         a.runModal()
+        NSApp.deactivate()
     }
 }
 
