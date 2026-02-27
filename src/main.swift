@@ -191,7 +191,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         menu.addItem(menuItem("Show Log",       action: #selector(showLog)))
         menu.addItem(.separator())
-        menu.addItem(menuItem("Quit URLBouncer", action: #selector(NSApplication.terminate(_:))))
+        let quitItem = NSMenuItem(title: "Quit URLBouncer", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
+        quitItem.target = NSApp
+        menu.addItem(quitItem)
         statusItem.menu = menu
     }
 
