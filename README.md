@@ -2,6 +2,13 @@
 
 A macOS menu bar app that intercepts every link you click in any application (Slack, Mail, etc.) and opens it in the right Google Chrome profile based on configurable rules.
 
+## What's the point of this?
+
+By default when opening a link from some other application (such as Slack), Chrome will open that in whatever window was last active. With this, clearly work-related things can be kept to the "work profile", and obviously non-work things in another profile. Helps to keep
+cookies and logins and history separate between them.
+
+100% vibe coded, I have no business doing Swift things dealing with MacOS specifics myself.
+
 ## Requirements
 
 - macOS 12+
