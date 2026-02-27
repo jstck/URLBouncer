@@ -1,7 +1,9 @@
 {
   "rules": [
-    {"match": "github.com",  "profile": "Profile 1"},
-    {"match": "youtube.com", "profile": "Profile 2"}
+    {"match": "github.com",                              "profile": "Profile 1"},
+    {"match": "docs.google.com", "sourceApp": "Slack",   "profile": "Profile 1"},
+    {"match": "docs.google.com", "sourceApp": "Telegram","profile": "Profile 2"},
+    {"match": "youtube.com",                             "profile": "Profile 2"}
   ],
   "defaultProfile": "Profile 2"
 }

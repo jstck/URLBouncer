@@ -12,6 +12,7 @@ private let kDirectObject     = UInt32(0x2d2d2d2d)
 
 struct Rule: Codable {
     let match: String
+    let sourceApp: String?   // optional: case-insensitive substring of bundle ID or app name
     let profile: String
 }
 
@@ -44,7 +45,7 @@ func loadConfig() -> Config {
 
 // MARK: - Router
 
-func routeURL(_ urlString: String, config: Config) -> String {
+func routeURL(_ urlString: String, source: NSRunningApplication?, config: Config) -> String {
     guard let components = URLComponents(string: urlString) else {
         return config.defaultProfile
     }
@@ -53,19 +54,26 @@ func routeURL(_ urlString: String, config: Config) -> String {
 
     for rule in config.rules {
         let pattern = rule.match
-        let matched: Bool
+        let urlMatched: Bool
         if pattern.hasPrefix("re:") {
             let regex = String(pattern.dropFirst(3))
-            matched = urlString.range(of: regex, options: [.regularExpression, .caseInsensitive]) != nil
+            urlMatched = urlString.range(of: regex, options: [.regularExpression, .caseInsensitive]) != nil
         } else if pattern.contains("/") || pattern.contains("?") {
-            matched = fullURL.contains(pattern.lowercased())
+            urlMatched = fullURL.contains(pattern.lowercased())
         } else {
-            matched = host.contains(pattern.lowercased())
+            urlMatched = host.contains(pattern.lowercased())
         }
-        if matched {
-            logURL("Rule '\(pattern)' matched \(urlString) → \(rule.profile)")
-            return rule.profile
+        guard urlMatched else { continue }
+
+        if let filter = rule.sourceApp {
+            let bundleID = (source?.bundleIdentifier ?? "").lowercased()
+            let appName  = (source?.localizedName   ?? "").lowercased()
+            let f = filter.lowercased()
+            guard bundleID.contains(f) || appName.contains(f) else { continue }
         }
+
+        logURL("Rule '\(pattern)'\(rule.sourceApp.map { " (from '\($0)')" } ?? "") matched \(urlString) → \(rule.profile)")
+        return rule.profile
     }
     logURL("No rule matched \(urlString) → \(config.defaultProfile) (default)")
     return config.defaultProfile
@@ -148,7 +156,6 @@ func logURL(_ message: String) {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var urlLogItem: NSMenuItem!
-    private var isHandlingAlert = false
     private var previousFrontmostApp: NSRunningApplication?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -164,20 +171,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
         log("URLBouncer started")
-    }
 
-    func applicationWillBecomeActive(_ notification: Notification) {
-        // Capture whoever is active now, before URLBouncer steals focus
-        let prev = NSWorkspace.shared.frontmostApplication
-        if prev?.bundleIdentifier != Bundle.main.bundleIdentifier {
-            previousFrontmostApp = prev
-        }
-    }
-
-    func applicationDidBecomeActive(_ notification: Notification) {
-        guard !isHandlingAlert else { return }
-        if let prev = previousFrontmostApp {
-            NSApp.yieldActivation(to: prev)
+        // Track the last frontmost app for source-based routing.
+        // NSWorkspace notifications fire regardless of LSUIElement status,
+        // unlike applicationWillBecomeActive which never fires for agent apps.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
+            self?.previousFrontmostApp = app
         }
     }
 
@@ -186,9 +191,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             log("GetURL event: missing URL")
             return
         }
-        logURL("Received: \(urlString)")
+        let source = previousFrontmostApp
+        logURL("Received: \(urlString) — from: \(source?.localizedName ?? "unknown") [\(source?.bundleIdentifier ?? "?")]")
         let config  = loadConfig()
-        let profile = routeURL(urlString, config: config)
+        let profile = routeURL(urlString, source: source, config: config)
         openInChrome(url: urlString, profile: profile)
     }
 
@@ -280,14 +286,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func alert(title: String, message: String) {
-        isHandlingAlert = true
         NSApp.activate(ignoringOtherApps: true)
         let a = NSAlert()
         a.messageText = title
         a.informativeText = message
         a.addButton(withTitle: "OK")
         a.runModal()
-        isHandlingAlert = false
         if let prev = previousFrontmostApp {
             NSApp.yieldActivation(to: prev)
         }

@@ -46,8 +46,10 @@ Your config file lives at `~/.config/urlbouncer/config.json`. The easiest way to
 ```json
 {
   "rules": [
-    {"match": "github.com",  "profile": "Profile 1"},
-    {"match": "youtube.com", "profile": "Profile 2"}
+    {"match": "github.com",                               "profile": "Profile 1"},
+    {"match": "docs.google.com", "sourceApp": "Slack",    "profile": "Profile 1"},
+    {"match": "docs.google.com", "sourceApp": "Telegram", "profile": "Profile 2"},
+    {"match": "youtube.com",                              "profile": "Profile 2"}
   ],
   "defaultProfile": "Profile 2"
 }
@@ -62,6 +64,18 @@ Rules are matched top-to-bottom; the first match wins. No restart is needed afte
 | `"github.com"` | Hostname (case-insensitive substring) |
 | `"github.com/myorg/"` | Full URL (pattern contains `/`) |
 | `"re:^https://meet\\.google\\.com/"` | Full URL regex (prefix `re:`) |
+
+### Source app filtering
+
+Add `"sourceApp"` to any rule to only match URLs opened from a specific app. The value is a case-insensitive substring matched against the app's bundle identifier or display name:
+
+```json
+{"match": "docs.google.com", "sourceApp": "Slack",                        "profile": "Profile 1"},
+{"match": "docs.google.com", "sourceApp": "com.tinyspeck.slackmacgap",    "profile": "Profile 1"},
+{"match": "docs.google.com", "sourceApp": "Telegram",                     "profile": "Profile 2"}
+```
+
+Rules without `sourceApp` match links from any app. To discover an app's bundle ID, enable **Log URLs** in the menu bar and click a link — the log will show `from: AppName [com.bundle.id]`.
 
 ### Finding your profile directory names
 
