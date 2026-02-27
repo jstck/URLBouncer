@@ -20,6 +20,8 @@
     <string>1</string>
     <key>CFBundleSignature</key>
     <string>????</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
 
     <!-- Makes the app appear in the "Default web browser" picker -->
     <key>LSApplicationCategoryType</key>

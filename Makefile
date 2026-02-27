@@ -15,6 +15,9 @@ bundle:
 	@cp Info.plist $(CONTENTS)/Info.plist
 	@printf 'APPL????' > $(CONTENTS)/PkgInfo
 	@cp config.json $(RSRC_DIR)/config.json
+	@cp AppIcon.icns $(RSRC_DIR)/AppIcon.icns
+	@cp menuicon.png $(RSRC_DIR)/menuicon.png
+	@cp "menuicon@2x.png" "$(RSRC_DIR)/menuicon@2x.png"
 	codesign --force --sign - $(BUNDLE)
 	$(LSREGISTER) -f $(BUNDLE)
 	@echo ""

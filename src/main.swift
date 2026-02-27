@@ -173,7 +173,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            if let img = NSImage(systemSymbolName: "arrow.triangle.branch", accessibilityDescription: "URLBouncer") {
+            if let img = NSImage(named: "menuicon") {
                 img.isTemplate = true
                 button.image = img
             } else {
