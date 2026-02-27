@@ -63,11 +63,11 @@ func routeURL(_ urlString: String, config: Config) -> String {
             matched = host.contains(pattern.lowercased())
         }
         if matched {
-            log("Rule '\(pattern)' matched \(urlString) → \(rule.profile)")
+            logURL("Rule '\(pattern)' matched \(urlString) → \(rule.profile)")
             return rule.profile
         }
     }
-    log("No rule matched \(urlString) → \(config.defaultProfile) (default)")
+    logURL("No rule matched \(urlString) → \(config.defaultProfile) (default)")
     return config.defaultProfile
 }
 
@@ -79,9 +79,9 @@ func openInChrome(url: String, profile: String) {
     task.arguments = ["-na", "Google Chrome", "--args", "--profile-directory=\(profile)", url]
     do {
         try task.run()
-        log("Opened \(url) in Chrome profile '\(profile)'")
+        logURL("Opened \(url) in Chrome profile '\(profile)'")
     } catch {
-        log("ERROR: could not open \(url) in profile '\(profile)': \(error)")
+        logURL("ERROR: could not open \(url) in profile '\(profile)': \(error)")
     }
 }
 
@@ -119,6 +119,7 @@ func listChromeProfiles() -> [ChromeProfile] {
 // MARK: - Logging
 
 private var logHandle: FileHandle?
+var urlLoggingEnabled = false
 
 func setupLogging() {
     let logDir = FileManager.default.homeDirectoryForCurrentUser
@@ -137,10 +138,16 @@ func log(_ message: String) {
     logHandle?.write(Data(line.utf8))
 }
 
+func logURL(_ message: String) {
+    guard urlLoggingEnabled else { return }
+    log(message)
+}
+
 // MARK: - App Delegate
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
+    var urlLogItem: NSMenuItem!
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Must register before the run loop starts so cold-launch URLs are not missed
@@ -162,7 +169,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             log("GetURL event: missing URL")
             return
         }
-        log("Received: \(urlString)")
+        logURL("Received: \(urlString)")
         let config  = loadConfig()
         let profile = routeURL(urlString, config: config)
         openInChrome(url: urlString, profile: profile)
@@ -190,6 +197,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(menuItem("Chrome Profiles", action: #selector(showProfiles)))
         menu.addItem(.separator())
         menu.addItem(menuItem("Show Log",       action: #selector(showLog)))
+        urlLogItem = menuItem("Log URLs",       action: #selector(toggleURLLogging))
+        menu.addItem(urlLogItem)
         menu.addItem(.separator())
         let quitItem = NSMenuItem(title: "Quit URLBouncer", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
         quitItem.target = NSApp
@@ -236,6 +245,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             p.email.isEmpty ? "\(p.dir)  →  \(p.name)" : "\(p.dir)  →  \(p.name)  (\(p.email))"
         }
         alert(title: "Chrome Profiles", message: lines.joined(separator: "\n"))
+    }
+
+    @objc func toggleURLLogging() {
+        urlLoggingEnabled.toggle()
+        urlLogItem.state = urlLoggingEnabled ? .on : .off
+        log(urlLoggingEnabled ? "URL logging enabled" : "URL logging disabled")
     }
 
     @objc func showLog() {
