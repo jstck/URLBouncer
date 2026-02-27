@@ -13,16 +13,17 @@ private let kDirectObject     = UInt32(0x2d2d2d2d)
 struct Rule: Codable {
     let match: String
     let sourceApp: String?   // optional: case-insensitive substring of bundle ID or app name
-    let profile: String
+    let profile: String?     // nil = open in Chrome without specifying a profile
 }
 
 struct Config: Codable {
     let rules: [Rule]
-    let defaultProfile: String
+    let defaultProfile: String?  // nil = open without specifying a profile
     let profiles: [String: String]?  // alias → Chrome profile directory name
 
-    func resolveProfile(_ name: String) -> String {
-        profiles?[name] ?? name
+    func resolveProfile(_ name: String?) -> String? {
+        guard let name else { return nil }
+        return profiles?[name] ?? name
     }
 }
 
@@ -43,14 +44,14 @@ func loadConfig() -> Config {
     guard let data = try? Data(contentsOf: configFile),
           let config = try? JSONDecoder().decode(Config.self, from: data) else {
         log("Failed to load config, using defaults")
-        return Config(rules: [], defaultProfile: "Default", profiles: nil)
+        return Config(rules: [], defaultProfile: nil, profiles: nil)
     }
     return config
 }
 
 // MARK: - Router
 
-func routeURL(_ urlString: String, source: NSRunningApplication?, config: Config) -> String {
+func routeURL(_ urlString: String, source: NSRunningApplication?, config: Config) -> String? {
     guard let components = URLComponents(string: urlString) else {
         return config.defaultProfile
     }
@@ -77,24 +78,31 @@ func routeURL(_ urlString: String, source: NSRunningApplication?, config: Config
             guard bundleID.contains(f) || appName.contains(f) else { continue }
         }
 
-        logURL("Rule '\(pattern)'\(rule.sourceApp.map { " (from '\($0)')" } ?? "") matched \(urlString) → \(rule.profile)")
+        let dest = rule.profile ?? "(no profile)"
+        logURL("Rule '\(pattern)'\(rule.sourceApp.map { " (from '\($0)')" } ?? "") matched \(urlString) → \(dest)")
         return rule.profile
     }
-    logURL("No rule matched \(urlString) → \(config.defaultProfile) (default)")
+    let dest = config.defaultProfile ?? "(no profile)"
+    logURL("No rule matched \(urlString) → \(dest) (default)")
     return config.defaultProfile
 }
 
 // MARK: - Chrome
 
-func openInChrome(url: String, profile: String) {
+func openInChrome(url: String, profile: String?) {
     let task = Process()
     task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-    task.arguments = ["-na", "Google Chrome", "--args", "--profile-directory=\(profile)", url]
+    if let profile {
+        task.arguments = ["-na", "Google Chrome", "--args", "--profile-directory=\(profile)", url]
+        logURL("Opened \(url) in Chrome profile '\(profile)'")
+    } else {
+        task.arguments = ["-na", "Google Chrome", url]
+        logURL("Opened \(url) in Chrome (no profile)")
+    }
     do {
         try task.run()
-        logURL("Opened \(url) in Chrome profile '\(profile)'")
     } catch {
-        logURL("ERROR: could not open \(url) in profile '\(profile)': \(error)")
+        logURL("ERROR: could not open \(url): \(error)")
     }
 }
 
