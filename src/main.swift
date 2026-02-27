@@ -19,6 +19,11 @@ struct Rule: Codable {
 struct Config: Codable {
     let rules: [Rule]
     let defaultProfile: String
+    let profiles: [String: String]?  // alias → Chrome profile directory name
+
+    func resolveProfile(_ name: String) -> String {
+        profiles?[name] ?? name
+    }
 }
 
 let configDir  = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config/urlbouncer")
@@ -38,7 +43,7 @@ func loadConfig() -> Config {
     guard let data = try? Data(contentsOf: configFile),
           let config = try? JSONDecoder().decode(Config.self, from: data) else {
         log("Failed to load config, using defaults")
-        return Config(rules: [], defaultProfile: "Default")
+        return Config(rules: [], defaultProfile: "Default", profiles: nil)
     }
     return config
 }
@@ -193,9 +198,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let source = previousFrontmostApp
         logURL("Received: \(urlString) — from: \(source?.localizedName ?? "unknown") [\(source?.bundleIdentifier ?? "?")]")
-        let config  = loadConfig()
-        let profile = routeURL(urlString, source: source, config: config)
-        openInChrome(url: urlString, profile: profile)
+        let config   = loadConfig()
+        let profile  = routeURL(urlString, source: source, config: config)
+        let resolved = config.resolveProfile(profile)
+        openInChrome(url: urlString, profile: resolved)
     }
 
     // MARK: Menu bar

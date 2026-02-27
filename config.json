@@ -1,9 +1,13 @@
 {
+  "profiles": {
+    "work":     "Profile 1",
+    "personal": "Profile 2"
+  },
   "rules": [
-    {"match": "github.com",                              "profile": "Profile 1"},
-    {"match": "docs.google.com", "sourceApp": "Slack",   "profile": "Profile 1"},
-    {"match": "docs.google.com", "sourceApp": "Telegram","profile": "Profile 2"},
-    {"match": "youtube.com",                             "profile": "Profile 2"}
+    {"match": "github.com",                              "profile": "work"},
+    {"match": "docs.google.com", "sourceApp": "Slack",   "profile": "work"},
+    {"match": "docs.google.com/presentation",            "profile": "work"},
+    {"match": "youtube.com",                             "profile": "personal"}
   ],
-  "defaultProfile": "Profile 2"
+  "defaultProfile": "personal"
 }

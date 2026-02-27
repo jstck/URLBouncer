@@ -45,15 +45,21 @@ Your config file lives at `~/.config/urlbouncer/config.json`. The easiest way to
 
 ```json
 {
+  "profiles": {
+    "work":     "Profile 1",
+    "personal": "Profile 2"
+  },
   "rules": [
-    {"match": "github.com",                               "profile": "Profile 1"},
-    {"match": "docs.google.com", "sourceApp": "Slack",    "profile": "Profile 1"},
-    {"match": "docs.google.com", "sourceApp": "Telegram", "profile": "Profile 2"},
-    {"match": "youtube.com",                              "profile": "Profile 2"}
+    {"match": "github.com",                               "profile": "work"},
+    {"match": "docs.google.com", "sourceApp": "Slack",    "profile": "work"},
+    {"match": "docs.google.com", "sourceApp": "Telegram", "profile": "personal"},
+    {"match": "youtube.com",                              "profile": "personal"}
   ],
-  "defaultProfile": "Profile 2"
+  "defaultProfile": "personal"
 }
 ```
+
+The `profiles` map is optional — you can still write `"profile": "Profile 1"` directly in rules if you prefer.
 
 Rules are matched top-to-bottom; the first match wins. No restart is needed after editing — the config is re-read on every link click.
 
