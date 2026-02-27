@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>URLBouncer</string>
+    <key>CFBundleDisplayName</key>
+    <string>URLBouncer</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.local.urlbouncer</string>
+    <key>CFBundleExecutable</key>
+    <string>URLBouncer</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+
+    <!-- Makes the app appear in the "Default web browser" picker -->
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.productivity</string>
+
+    <!-- Registers this app as a handler for http and https URLs -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>Web URL (http)</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>http</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>Web URL (https)</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>https</string>
+            </array>
+        </dict>
+    </array>
+
+    <!-- Required for Cocoa run loop (Apple Event reception) -->
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+
+    <!-- Hide from Dock; app lives only in the menu bar -->
+    <key>LSUIElement</key>
+    <true/>
+
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+</dict>
+</plist>
