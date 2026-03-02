@@ -203,6 +203,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func application(_ sender: NSApplication, openFile filename: String) -> Bool {
+        let fileURL = URL(fileURLWithPath: filename).absoluteString
+        // Read the actual sender from the current Apple Event (more reliable than previousFrontmostApp
+        // for programmatic file opens where the sending app never becomes frontmost)
+        let senderPID = NSAppleEventManager.shared().currentAppleEvent?
+            .attributeDescriptor(forKeyword: AEKeyword(keySenderPIDAttr))?.int32Value
+        let source = senderPID.flatMap { NSRunningApplication(processIdentifier: $0) } ?? previousFrontmostApp
+        logURL("File open request: \(filename) — from: \(source?.localizedName ?? "unknown") [\(source?.bundleIdentifier ?? "?")]")
+        let config  = loadConfig()
+        let profile = routeURL(fileURL, source: source, config: config)
+        openInChrome(url: fileURL, profile: config.resolveProfile(profile))
+        return true
+    }
+
     @objc func handleGetURL(_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor) {
         guard let urlString = event.paramDescriptor(forKeyword: kDirectObject)?.stringValue else {
             log("GetURL event: missing URL")
@@ -273,7 +287,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func reloadConfig() {
         let config = loadConfig()
         alert(title: "Config Reloaded",
-              message: "\(config.rules.count) rule(s)\nDefault profile: \(config.defaultProfile)")
+              message: "\(config.rules.count) rule(s)\nDefault profile: \(config.defaultProfile ?? "(none)")")
     }
 
     @objc func showProfiles() {

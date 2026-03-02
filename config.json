@@ -8,7 +8,8 @@
     {"match": "docs.google.com", "sourceApp": "Slack",   "profile": "work"},
     {"sourceApp": "WhatsApp",   "profile": "personal"},
     {"match": "docs.google.com/presentation",            "profile": "work"},
-    {"match": "youtube.com",                             "profile": "personal"}
+    {"match": "youtube.com",                             "profile": "personal"},
+    {"sourceApp": "GlobalProtect", "profile": "work"}
   ],
   "defaultProfile": null
 }
