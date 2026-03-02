@@ -4,10 +4,10 @@ A macOS menu bar app that intercepts every link you click in any application (Sl
 
 ## What's the point of this?
 
-By default when opening a link from some other application (such as Slack), Chrome will open that in whatever window was last active. With this, clearly work-related things can be kept to the "work profile", and obviously non-work things in another profile. Helps to keep
-cookies and logins and history separate between them.
+By default when opening a link from some other application (such as Slack), Chrome will open that in whatever window was last active. With this, clearly work-related things can be kept to the "work profile", and obviously non-work things in another profile. Helps to keep cookies and logins and history separate between them, and not having to first choose the right browser window before clicking links elsewhere.
 
-100% vibe coded, I have no business doing Swift things dealing with MacOS specifics myself.
+## Who made this?
+Mostly Claude, with managerial direction from Stäck.
 
 ## Requirements
 
@@ -21,7 +21,7 @@ cookies and logins and history separate between them.
 make install
 ```
 
-This compiles the app, copies it to `/Applications/`, and registers it with macOS.
+This compiles the app, copies it to `/Applications/`, and registers it with macOS. Note that this also signs the installed binary.
 
 Then launch it once:
 
@@ -37,7 +37,7 @@ Click the menu bar icon → **Set as Default Browser**. This registers URLBounce
 
 From this point on, every link clicked in any app will go through URLBouncer before reaching Chrome.
 
-> **Note:** System Settings → Desktop & Dock will continue to show "Safari" (or whatever you had before) rather than URLBouncer — this is a display quirk because URLBouncer isn't in Apple's pre-approved browser list. The routing still works correctly; you can verify via the log. If you ever accidentally change the default browser via System Settings, just click **Set as Default Browser** again.
+> **Note:** System Settings → Desktop & Dock will continue to show "Safari" (or whatever you had before) rather than URLBouncer — this is a display quirk because URLBouncer isn't in Apple's pre-approved browser list. The routing still works correctly; you can verify via the log. You can change the default browser via System Settings to disable URLBouncer, and select **Set as Default Browser** again to reenable it.
 
 ## Configure rules
 
@@ -61,7 +61,7 @@ Your config file lives at `~/.config/urlbouncer/config.json`. The easiest way to
 
 Set `"profile": null` (or `"defaultProfile": null`) to open URLs in Chrome without specifying a profile — Chrome will use whatever window was last active.
 
-The `profiles` map is optional — you can still write `"profile": "Profile 1"` directly in rules if you prefer.
+The `profiles` map is optional and just for convenient friendly names for the profiles. You can still write `"profile": "Profile 1"` directly in rules if you prefer.
 
 Rules are matched top-to-bottom; the first match wins. No restart is needed after editing — the config is re-read on every link click.
 
@@ -98,11 +98,13 @@ The left column (`Profile 1`, `Profile 2`, etc.) is what you put in the config. 
 
 | Item | What it does |
 |------|-------------|
+| Set as Default Browser | Registers URLBouncer as the default browser with macOS |
 | Open Config | Opens `~/.config/urlbouncer/config.json` in your default text editor |
 | Reload Config | Confirms how many rules are loaded (config is always live) |
 | Chrome Profiles | Shows all detected Chrome profiles with names and emails |
 | Show Log | Opens the log in Console.app (`~/Library/Logs/URLBouncer/urlbouncer.log`) |
-| Quit URLBouncer | Exits the app (links will stop working until you relaunch) |
+| Log URLs | Toggle: when on, logs every received URL and routing decision. For privacy reasons this is off by default, and only stays on until next time URLBouncer is restarted (or option is unchecked) |
+| Quit URLBouncer | Exits the app |
 
 ## Testing without setting as default browser
 
@@ -121,7 +123,7 @@ tail -f ~/Library/Logs/URLBouncer/urlbouncer.log
 ## Auto-start on login
 
 Go to **System Settings → General → Login Items** and add `/Applications/URLBouncer.app`.
-It doesn't relly need this, the app will get launched if not running whenever a URL is opened.
+This is not usually needed, as the registered default browser will get launched whenever a URL is opened.
 
 ## Updating after config or code changes
 
@@ -133,3 +135,5 @@ If you changed `src/main.swift`, rebuild and relaunch:
 make install
 open /Applications/URLBouncer.app
 ```
+
+Running `make install` will not overwrite your config.
