@@ -1,0 +1,30 @@
+{
+  "profiles": {
+    "work": {
+      "browser": "chrome",
+      "browserProfile": "Profile 1"
+    },
+    "goOnSafari": {
+        "browser": "safari",
+        "browserProfile": "Some Safari Profile"
+    },
+    "other": {
+        "browser": "opera"
+    },
+    "other_app": {
+      "app": "Whatever.app"
+    },
+    "other_script": {
+      "executable": "/usr/local/bin/whatever.sh --with --args ${url} --also ${sourceApp}"
+    }
+  },
+  "rules": [
+    {"match": "github.com",                              "profile": "work"},
+    {"match": "docs.google.com", "sourceApp": "Slack",   "profile": "work"},
+    {"sourceApp": "WhatsApp",   "profile": "personal"},
+    {"match": "docs.google.com/presentation",            "profile": "work"},
+    {"match": "youtube.com",                             "profile": "personal"},
+    {"sourceApp": "GlobalProtect", "profile": "work"}
+  ],
+  "defaultProfile": null
+}
