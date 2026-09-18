@@ -1,19 +1,29 @@
 # URLBouncer
 
-A macOS menu bar app that intercepts every link you click in any application (Slack, Mail, etc.) and opens it in the right Google Chrome profile based on configurable rules.
+A macOS menu bar app that intercepts every link you click in any application (Slack, Mail, Discord, etc.) and routes it to the right browser profile, application, or custom script based on configurable rules.
+
+Originally designed for Chrome profile routing, URLBouncer now supports **Firefox profiles**, **Safari**, **Opera**, **arbitrary applications**, and **custom shell scripts**.
 
 ## What's the point of this?
 
-By default when opening a link from some other application (such as Slack), Chrome will open that in whatever window was last active. With this, clearly work-related things can be kept to the "work profile", and obviously non-work things in another profile. Helps to keep cookies and logins and history separate between them, and not having to first choose the right browser window before clicking links elsewhere.
+By default when opening a link from some other application (such as Slack), macOS will open that in whatever window was last active. With this, you can:
 
-## Who made this?
-Mostly Claude, with managerial direction from Stäck.
+- Route work-related links (slack, github, corporate systems and whatever your work may entail) to your Chrome work profile (keeping cookies/logins separate)
+- Route personal links (social media, news sites and such) to your Firefox personal profile
+- Route documentation to Safari (or any other app)
+- Route URLs to arbitrary apps or scripts for custom handling
+- Avoid having to manually choose the right browser/app before clicking links
 
 ## Requirements
 
 - macOS 15 (Sequoia) or later
 - Xcode Command Line Tools (`xcode-select --install`)
-- Google Chrome
+
+### Optional (depending on what you want to route to)
+- **Chrome** — for Chrome profile routing
+- **Firefox** — for Firefox profile routing (profiles: `~/.config/firefox/Profiles/`)
+- **Safari** — for Safari routing (note: Safari doesn't support CLI profile switching, so all Safari opens use the default)
+- **Opera** — for Opera profile routing (specify profiles by full path)
 
 ## Install
 
@@ -21,7 +31,7 @@ Mostly Claude, with managerial direction from Stäck.
 make install
 ```
 
-This compiles the app, copies it to `/Applications/`, and registers it with macOS. Note that this also signs the installed binary.
+This compiles the app, copies it to `/Applications/`, and signs the binary.
 
 Then launch it once:
 
@@ -29,7 +39,7 @@ Then launch it once:
 open /Applications/URLBouncer.app
 ```
 
-A branch icon will appear in your menu bar.
+A branch icon will appear in your menu bar. This launch is also what registers URLBouncer with macOS's Launch Services (as a handler for `http`/`https` URLs) — no separate registration step is needed.
 
 ## Set as default browser
 
@@ -43,25 +53,123 @@ From this point on, every link clicked in any app will go through URLBouncer bef
 
 Your config file lives at `~/.config/urlbouncer/config.json`. The easiest way to open it is via the menu bar: **→ Open Config**.
 
+URLBouncer has "profiles". Each profile specifies **how** to open a link: in a browser (with optional profile), in an application, or via a custom script. In a typical plain use-case, URLBouncer profiles correlate with browser profiles.
+These are defined in the `"profiles"` object. Each profile can be one of three types:
+
+#### 1. Browser Profile
+
+Open a URL in a specific browser with an optional profile:
+
 ```json
 {
   "profiles": {
-    "work":     "Profile 1",
-    "personal": "Profile 2"
-  },
-  "rules": [
-    {"match": "github.com",                              "profile": "work"},
-    {"match": "docs.google.com", "sourceApp": "Slack",   "profile": "work"},
-    {"sourceApp": "WhatsApp",                            "profile": "personal"},
-    {"match": "youtube.com",                             "profile": "personal"}
-  ],
-  "defaultProfile": null
+    "chrome_work": {
+      "browser": "chrome",
+      "browserProfile": "Profile 1"
+    },
+    "firefox_personal": {
+      "browser": "firefox",
+      "browserProfile": "personal"
+    },
+    "safari_default": {
+      "browser": "safari"
+    },
+    "opera_work": {
+      "browser": "opera",
+      "browserProfile": "/Users/john/Library/Application Support/Opera/Profiles/work"
+    }
+  }
 }
 ```
 
-Set `"profile": null` (or `"defaultProfile": null`) to open URLs in Chrome without specifying a profile — Chrome will use whatever window was last active.
+**Supported browsers:**
+- `"chrome"` — Opens in Chrome with optional `browserProfile` (e.g., "Profile 1", "Profile 2")
+- `"firefox"` — Opens in Firefox with optional `browserProfile` (e.g., "default", "personal")
+- `"safari"` — Opens in Safari (note: `browserProfile` is ignored; Safari doesn't support CLI profile selection)
+- `"opera"` — Opens in Opera with optional `browserProfile` (full path to profile directory)
 
-The `profiles` map is optional and just for convenient friendly names for the profiles. You can still write `"profile": "Profile 1"` directly in rules if you prefer.
+#### 2. Application Profile
+
+Open a URL with a specific macOS application:
+
+```json
+{
+  "profiles": {
+    "open_notes": {
+      "app": "Notes"
+    },
+    "open_finder": {
+      "app": "Finder",
+      "appPath": "/System/Library/CoreServices/Finder.app"
+    }
+  }
+}
+```
+
+- `"app"` (required) — App name (e.g., "Notes", "Mail") or bundle ID
+- `"appPath"` (optional) — Full path to `.app` bundle; if omitted, macOS searches PATH
+
+#### 3. Script/Executable Profile
+
+Execute a custom script or command with URL and source app substitution:
+
+```json
+{
+  "profiles": {
+    "my_handler": {
+      "executable": "/usr/local/bin/handle_url.sh ${url} ${sourceApp}",
+      "alertOnError": true
+    }
+  }
+}
+```
+
+- `"executable"` (required) — Path to script/binary; supports two placeholders:
+  - `${url}` — Replaced with the full URL
+  - `${sourceApp}` — Replaced with the source application name (or empty if unknown)
+- `"alertOnError"` (optional, default: false) — If `true`, shows alert when script exits with non-zero code
+
+**Example script:**
+```bash
+#!/bin/bash
+URL="$1"
+SOURCE_APP="$2"
+# Do something with $URL and $SOURCE_APP
+```
+
+### Complete Example Config
+
+```json
+{
+  "profiles": {
+    "work_chrome": {
+      "browser": "chrome",
+      "browserProfile": "Profile 1"
+    },
+    "personal_firefox": {
+      "browser": "firefox",
+      "browserProfile": "personal"
+    },
+    "docs_safari": {
+      "browser": "safari"
+    },
+    "send_to_script": {
+      "executable": "/usr/local/bin/url_handler.sh ${url}",
+      "alertOnError": true
+    }
+  },
+  "rules": [
+    {"match": "github.com", "profile": "work_chrome"},
+    {"match": "docs.google.com", "sourceApp": "Slack", "profile": "work_chrome"},
+    {"match": "youtube.com", "profile": "personal_firefox"},
+    {"match": "example.com", "profile": "docs_safari"},
+    {"match": "internal.company.com", "profile": "send_to_script"}
+  ],
+  "defaultProfile": "personal_firefox"
+}
+```
+
+### Rules
 
 Rules are matched top-to-bottom; the first match wins. No restart is needed after editing — the config is re-read on every link click.
 
@@ -86,13 +194,34 @@ Add `"sourceApp"` to any rule to only match URLs opened from a specific app. The
 
 Rules without `sourceApp` match links from any app. To discover an app's bundle ID, enable **Log URLs** in the menu bar and click a link — the log will show `from: AppName [com.bundle.id]`.
 
-### Finding your profile directory names
+### Finding your browser profiles
 
-Click the menu bar icon → **Chrome Profiles** to see a dialog like this:
+Click the menu bar icon → **Manage Profiles** to see a dialog listing all detected browser profiles. You can use the **Copy Profiles Block** button to generate a ready-to-paste JSON profiles block for your config.
 
-![Chrome Profiles dialog](profiles.png)
+#### Chrome profiles
 
-The left column (`Profile 1`, `Profile 2`, etc.) is what you put in the config. The right side shows the account name and email so you can tell them apart.
+Profiles are located at: `~/Library/Application Support/Google/Chrome/`
+
+Use the directory name (e.g., `Profile 1`, `Default`, `Profile 2`) as your `browserProfile` value.
+
+#### Firefox profiles
+
+Profiles are located at: `~/Library/Application Support/Firefox/Profiles/`
+
+Use the directory name (e.g., `default`, `personal`) as your `browserProfile` value.
+
+#### Opera profiles
+
+Profiles are located at: `~/Library/Application Support/Opera/Profiles/` (or similar path)
+
+Use the **full path** to the profile directory as your `browserProfile` value, e.g.:
+```
+"/Users/john/Library/Application Support/Opera/Profiles/work"
+```
+
+#### Safari
+
+Safari does not support opening to a specific profile via command line, so `browserProfile` is ignored for Safari. All Safari opens use the currently active Safari window/profile.
 
 ## Menu bar options
 
@@ -100,11 +229,35 @@ The left column (`Profile 1`, `Profile 2`, etc.) is what you put in the config. 
 |------|-------------|
 | Set as Default Browser | Registers URLBouncer as the default browser with macOS |
 | Open Config | Opens `~/.config/urlbouncer/config.json` in your default text editor |
-| Reload Config | Confirms how many rules are loaded (config is always live) |
-| Chrome Profiles | Shows all detected Chrome profiles with names and emails |
+| Reload Config | Confirms how many rules are loaded and the default profile (config is always live) |
+| Manage Profiles | Shows all detected browser profiles (Chrome, Firefox, Opera) and offers a "Copy Profiles Block" button to generate JSON for your config |
 | Show Log | Opens the log in Console.app (`~/Library/Logs/URLBouncer/urlbouncer.log`) |
-| Log URLs | Toggle: when on, logs every received URL and routing decision. For privacy reasons this is off by default, and only stays on until next time URLBouncer is restarted (or option is unchecked) |
+| Log URLs | Toggle: when on, logs every received URL and routing decision. Includes sensitive URL info. For privacy, this is off by default and resets when URLBouncer restarts |
 | Quit URLBouncer | Exits the app |
+
+## Error Handling & Logging
+
+### Application Errors
+
+If an application (browser, script, etc.) fails to launch:
+- **Always logged** to `~/Library/Logs/URLBouncer/urlbouncer.log` with error details
+- **Always shows alert** to notify you something went wrong
+- URLs are **redacted in logs** unless "Log URLs" is enabled in the menu
+
+### Script Execution Errors
+
+When executing a custom script:
+- **Always logged** with: full command line, exit code, stdout, and stderr (first 500 chars)
+- **Alert shown only if** `"alertOnError": true` is set in that profile's config
+- URLs are **redacted in logs** unless "Log URLs" is enabled
+
+### Debugging
+
+To see detailed routing and execution information:
+1. Click menu → **Log URLs** to enable detailed logging
+2. Click menu → **Show Log** to open the log viewer
+3. Perform the action you're debugging
+4. Watch the real-time log output in Console.app
 
 ## Testing without setting as default browser
 
@@ -125,11 +278,58 @@ tail -f ~/Library/Logs/URLBouncer/urlbouncer.log
 Go to **System Settings → General → Login Items** and add `/Applications/URLBouncer.app`.
 This is not usually needed, as the registered default browser will get launched whenever a URL is opened.
 
+## Troubleshooting
+
+### Check which app macOS thinks is the default browser
+
+```bash
+defaults read com.apple.LaunchServices/com.apple.launchservices.secure LSHandlers | grep -B2 -A3 'LSHandlerURLScheme = http\b\|LSHandlerURLScheme = https'
+```
+
+Look for `LSHandlerRoleAll = "com.local.urlbouncer";` next to `LSHandlerURLScheme = http` and `https`. This is the actual state macOS uses for routing — it's independent of what System Settings → Default web browser happens to display (see the note under "Set as default browser" above).
+
+### Confirm URLBouncer is registered with Launch Services
+
+```bash
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -dump | grep -A 15 "com.local.urlbouncer"
+```
+
+Shows the bundle path, version, and URL types Launch Services has on file. If this points at a stale path (e.g. after moving the app), just launch it again (`open /Applications/URLBouncer.app`) — launching is what registers it, there's no separate registration step.
+
+### "Set as Default Browser" doesn't seem to do anything
+
+- Make sure you approve the system confirmation dialog macOS shows when you click the menu item — the change only takes effect once you approve it there.
+- Then re-check with the `defaults read` command above; the change is real even though System Settings' picker won't reflect it.
+- Still nothing? Quit and relaunch URLBouncer, then try again.
+
+### Switching back to another browser
+
+URLBouncer being your default doesn't remove Chrome/Firefox/Safari/Opera from System Settings → Default web browser — open that dropdown and pick one of them directly; unlike URLBouncer, they're all still regular, picker-eligible apps.
+
+### Uninstalling
+
+```bash
+# 1. Switch your default browser back to something else first (see above)
+
+# 2. Quit the app
+osascript -e 'tell application "URLBouncer" to quit' 2>/dev/null || killall URLBouncer
+
+# 3. Unregister it from Launch Services, then remove it
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u /Applications/URLBouncer.app
+rm -rf /Applications/URLBouncer.app
+
+# 4. Remove its config, log, and state
+rm -rf ~/.config/urlbouncer
+rm -rf ~/Library/Logs/URLBouncer
+```
+
+If you added URLBouncer to Login Items, also remove it via System Settings → General → Login Items.
+
 ## Updating after config or code changes
 
 If you only edited `~/.config/urlbouncer/config.json`, no action is needed — changes are live immediately.
 
-If you changed `src/main.swift`, rebuild and relaunch:
+If you changed the app, rebuild and relaunch:
 
 ```bash
 make install

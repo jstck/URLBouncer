@@ -1,2 +1,4 @@
 URLBouncer.app/
 .claude/
+.build/
+*.swp

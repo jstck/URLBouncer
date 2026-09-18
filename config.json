@@ -1,15 +1,20 @@
 {
   "profiles": {
-    "work":     "Profile 1",
-    "personal": "Profile 2"
+    "work": {
+      "browser": "chrome",
+      "browserProfile": "Profile 1"
+    },
+    "personal": {
+      "browser": "chrome",
+      "browserProfile": "Profile 2"
+    }
   },
   "rules": [
-    {"match": "github.com",                              "profile": "work"},
-    {"match": "docs.google.com", "sourceApp": "Slack",   "profile": "work"},
-    {"sourceApp": "WhatsApp",   "profile": "personal"},
-    {"match": "docs.google.com/presentation",            "profile": "work"},
-    {"match": "youtube.com",                             "profile": "personal"},
-    {"sourceApp": "GlobalProtect", "profile": "work"}
+    {"match": "github.com", "profile": "work"},
+    {"match": "docs.google.com", "sourceApp": "Slack", "profile": "work"},
+    {"sourceApp": "WhatsApp", "profile": "personal"},
+    {"match": "docs.google.com/presentation", "profile": "work"},
+    {"match": "youtube.com", "profile": "personal"}
   ],
   "defaultProfile": null
 }
