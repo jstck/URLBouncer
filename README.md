@@ -139,35 +139,7 @@ SOURCE_APP="$2"
 
 ### Complete Example Config
 
-```json
-{
-  "profiles": {
-    "work_chrome": {
-      "browser": "chrome",
-      "browserProfile": "Profile 1"
-    },
-    "personal_firefox": {
-      "browser": "firefox",
-      "browserProfile": "personal"
-    },
-    "docs_safari": {
-      "browser": "safari"
-    },
-    "send_to_script": {
-      "executable": "/usr/local/bin/url_handler.sh ${url}",
-      "alertOnError": true
-    }
-  },
-  "rules": [
-    {"match": "github.com", "profile": "work_chrome"},
-    {"match": "docs.google.com", "sourceApp": "Slack", "profile": "work_chrome"},
-    {"match": "youtube.com", "profile": "personal_firefox"},
-    {"match": "example.com", "profile": "docs_safari"},
-    {"match": "internal.company.com", "profile": "send_to_script"}
-  ],
-  "defaultProfile": "personal_firefox"
-}
-```
+[`example-config.json`](example-config.json) in this repo is a single config exercising all the profile types and match styles below — every browser, a generic app (by name and by path), a script, hostname/path/regex matching, `sourceApp`-only rules, and a `defaultProfile` fallback. It's also what a fresh install starts with, so editing **→ Open Config** for the first time shows this same file.
 
 ### Rules
 

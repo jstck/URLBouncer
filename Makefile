@@ -27,7 +27,7 @@ bundle: build
 	cp "$(BIN_DIR)/$(APP_NAME)" $(MACOS_DIR)/$(APP_NAME)
 	@cp Info.plist $(CONTENTS)/Info.plist
 	@printf 'APPL????' > $(CONTENTS)/PkgInfo
-	@cp config.json $(RSRC_DIR)/config.json
+	@cp example-config.json $(RSRC_DIR)/config.json
 	@cp AppIcon.icns $(RSRC_DIR)/AppIcon.icns
 	@cp menuicon.png $(RSRC_DIR)/menuicon.png
 	@cp "menuicon@2x.png" "$(RSRC_DIR)/menuicon@2x.png"
