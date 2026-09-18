@@ -119,9 +119,15 @@ final class ProfileDiscoveryTests {
 
     // MARK: Opera
 
+    private func makeOperaProfileDir(named name: String) throws {
+        let dir = tempDir.appendingPathComponent(name)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try Data().write(to: dir.appendingPathComponent("Preferences"))
+    }
+
     @Test func operaProfilesListedSortedWithFullPath() throws {
         for name in ["work", "personal"] {
-            try FileManager.default.createDirectory(at: tempDir.appendingPathComponent(name), withIntermediateDirectories: true)
+            try makeOperaProfileDir(named: name)
         }
         let profiles = listOperaProfiles(baseDir: tempDir)
         #expect(profiles.map(\.name) == ["personal", "work"])
@@ -134,8 +140,19 @@ final class ProfileDiscoveryTests {
 
     @Test func operaProfilesFiltersNonDirectories() throws {
         try Data().write(to: tempDir.appendingPathComponent("stray.txt"))
-        try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("work"), withIntermediateDirectories: true)
+        try makeOperaProfileDir(named: "work")
         let profiles = listOperaProfiles(baseDir: tempDir)
         #expect(profiles.map(\.name) == ["work"])
+    }
+
+    @Test func operaProfilesFiltersOutSupportDirectoriesWithoutPreferences() throws {
+        // Mirrors real Opera user-data-dir contents: cache/support
+        // directories sit alongside real profile directories, and only the
+        // latter contain a Preferences file.
+        try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("Crash Reports"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: tempDir.appendingPathComponent("WidevineCdm"), withIntermediateDirectories: true)
+        try makeOperaProfileDir(named: "Default")
+        let profiles = listOperaProfiles(baseDir: tempDir)
+        #expect(profiles.map(\.name) == ["Default"])
     }
 }
