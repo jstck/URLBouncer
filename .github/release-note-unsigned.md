@@ -1,0 +1,1 @@
+**Unsigned build.** This is not signed with an Apple Developer ID, so macOS will block it on first launch. To open it: try launching it once (it will be blocked), then go to System Settings > Privacy & Security, find the block notice for URLBouncer near the bottom of the page, and click "Open Anyway." Launch it again to confirm. See the README's Troubleshooting section for more.
