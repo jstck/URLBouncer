@@ -114,4 +114,27 @@ enum TestSupport {
     static func isBuiltAppRunning() -> Bool {
         !NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier).isEmpty
     }
+
+    /// PIDs of any process whose full command line contains `substring`.
+    /// Used to detect a process launched against a throwaway/isolated
+    /// browser profile - bundle-ID-based checks (NSRunningApplication)
+    /// can't distinguish "a new profile-specific process" from "the app
+    /// was already running under some other, unrelated profile."
+    static func pids(matchingCommandLineSubstring substring: String) -> [Int32] {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "ps -eo pid,command | grep -F \(shellQuoted(substring)) | grep -v grep"]
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        try? task.run()
+        task.waitUntilExit()
+        let text = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        return text.split(separator: "\n").compactMap { line in
+            Int32(line.trimmingCharacters(in: .whitespaces).prefix { $0.isNumber })
+        }
+    }
+
+    private static func shellQuoted(_ s: String) -> String {
+        "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
 }

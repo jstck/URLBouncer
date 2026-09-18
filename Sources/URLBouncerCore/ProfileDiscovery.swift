@@ -41,8 +41,11 @@ public let defaultFirefoxProfilesDir = FileManager.default.homeDirectoryForCurre
 public let defaultFirefoxProfilesIniPath = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent("Library/Application Support/Firefox/profiles.ini")
 
+// Opera names its user-data-dir by bundle identifier rather than "Opera",
+// and (like Chrome) keeps profile directories directly inside it rather
+// than under a nested "Profiles/" folder.
 public let defaultOperaProfilesDir = FileManager.default.homeDirectoryForCurrentUser
-    .appendingPathComponent("Library/Application Support/Opera/Profiles")
+    .appendingPathComponent("Library/Application Support/com.operasoftware.Opera")
 
 public func listChromeProfiles(baseDir: URL = defaultChromeProfilesDir) -> [ChromeProfile] {
     guard let entries = try? FileManager.default.contentsOfDirectory(
@@ -129,8 +132,11 @@ public func listOperaProfiles(baseDir: URL = defaultOperaProfilesDir) -> [OperaP
         return []
     }
 
+    // The user-data-dir also holds non-profile support directories
+    // (Crash Reports, GPUPersistentCache, WidevineCdm, ...); only a real
+    // profile directory contains a Preferences file, same as Chrome.
     return entries
-        .filter { $0.hasDirectoryPath }
+        .filter { $0.hasDirectoryPath && fileManager.fileExists(atPath: $0.appendingPathComponent("Preferences").path) }
         .sorted { $0.lastPathComponent < $1.lastPathComponent }
         .map { entry in
             OperaProfile(path: entry.path, name: entry.lastPathComponent)

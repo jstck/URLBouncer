@@ -76,7 +76,7 @@ Open a URL in a specific browser with an optional profile:
     },
     "opera_work": {
       "browser": "opera",
-      "browserProfile": "/Users/john/Library/Application Support/Opera/Profiles/work"
+      "browserProfile": "/Users/john/Library/Application Support/com.operasoftware.Opera/work"
     }
   }
 }
@@ -198,30 +198,7 @@ Rules without `sourceApp` match links from any app. To discover an app's bundle 
 
 Click the menu bar icon → **Manage Profiles** to see a dialog listing all detected browser profiles. You can use the **Copy Profiles Block** button to generate a ready-to-paste JSON profiles block for your config.
 
-#### Chrome profiles
-
-Profiles are located at: `~/Library/Application Support/Google/Chrome/`
-
-Use the directory name (e.g., `Profile 1`, `Default`, `Profile 2`) as your `browserProfile` value.
-
-#### Firefox profiles
-
-Profiles are located at: `~/Library/Application Support/Firefox/Profiles/`
-
-Use the directory name (e.g., `default`, `personal`) as your `browserProfile` value.
-
-#### Opera profiles
-
-Profiles are located at: `~/Library/Application Support/Opera/Profiles/` (or similar path)
-
-Use the **full path** to the profile directory as your `browserProfile` value, e.g.:
-```
-"/Users/john/Library/Application Support/Opera/Profiles/work"
-```
-
-#### Safari
-
-Safari does not support opening to a specific profile via command line, so `browserProfile` is ignored for Safari. All Safari opens use the currently active Safari window/profile.
+For exactly how each browser is launched (especially with a profile) and how profile discovery works under the hood — including a couple of non-obvious per-browser quirks (Chrome/Opera want different things for `browserProfile`, Firefox's display name can differ from its directory name) — see [BROWSERS.md](BROWSERS.md).
 
 ## Menu bar options
 

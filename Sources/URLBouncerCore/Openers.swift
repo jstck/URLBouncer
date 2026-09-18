@@ -55,10 +55,16 @@ public func openInChrome(url: String,
                           alertPresenter: AlertPresenting = RealAlertPresenter()) {
     let arguments: [String]
     if let profile = profile {
+        // -n forces a new process so --profile-directory actually gets
+        // delivered (see openInOpera below for the full explanation).
         arguments = ["-na", "Google Chrome", "--args", "--profile-directory=\(profile)", url]
         logURL("Opened \(url) in Chrome profile '\(profile)'")
     } else {
-        arguments = ["-na", "Google Chrome", url]
+        // No profile requested, so there's nothing that needs -n's
+        // "force a fresh process" behavior - just hand the URL to
+        // whatever's already running, exactly as if URLBouncer weren't
+        // involved at all.
+        arguments = ["-a", "Google Chrome", url]
         logURL("Opened \(url) in Chrome (no profile)")
     }
     do {
@@ -121,10 +127,15 @@ public func openInOpera(url: String,
                          alertPresenter: AlertPresenting = RealAlertPresenter()) {
     let arguments: [String]
     if let profile = profile {
-        // Opera uses --user-data-dir for profiles
-        arguments = ["-a", "Opera", "--args", "--user-data-dir=\(profile)", url]
+        // Opera uses --user-data-dir for profiles. -na forces `open` to spawn
+        // a new process carrying this argument along; without it, if Opera
+        // is already running, macOS just re-activates that process and
+        // silently drops --user-data-dir (and the URL never opens at all).
+        arguments = ["-na", "Opera", "--args", "--user-data-dir=\(profile)", url]
         logURL("Opened \(url) in Opera profile '\(profile)'")
     } else {
+        // No profile requested - just hand off to whatever's already
+        // running, same reasoning as Chrome's no-profile branch above.
         arguments = ["-a", "Opera", url]
         logURL("Opened \(url) in Opera (no profile)")
     }
