@@ -1,6 +1,6 @@
 # URLBouncer
 
-A macOS menu bar app that intercepts every link you click in any application (Slack, Mail, etc.) and routes it to the right browser profile, application, or custom script based on configurable rules.
+A macOS menu bar app that intercepts every link you click in any application (Slack, Mail, Discord, etc.) and routes it to the right browser profile, application, or custom script based on configurable rules.
 
 Originally designed for Chrome profile routing, URLBouncer now supports **Firefox profiles**, **Safari**, **Opera**, **arbitrary applications**, and **custom shell scripts**.
 
@@ -8,14 +8,11 @@ Originally designed for Chrome profile routing, URLBouncer now supports **Firefo
 
 By default when opening a link from some other application (such as Slack), macOS will open that in whatever window was last active. With this, you can:
 
-- Route work-related links to your Chrome work profile (keeping cookies/logins separate)
-- Route personal links to your Firefox personal profile
+- Route work-related links (slack, github, corporate systems and whatever your work may entail) to your Chrome work profile (keeping cookies/logins separate)
+- Route personal links (social media, news sites and such) to your Firefox personal profile
 - Route documentation to Safari (or any other app)
 - Route URLs to arbitrary apps or scripts for custom handling
 - Avoid having to manually choose the right browser/app before clicking links
-
-## Who made this?
-Mostly Claude, with managerial direction from John.
 
 ## Requirements
 
@@ -34,7 +31,7 @@ Mostly Claude, with managerial direction from John.
 make install
 ```
 
-This compiles the app, copies it to `/Applications/`, and registers it with macOS. Note that this also signs the installed binary.
+This compiles the app, copies it to `/Applications/`, and signs the binary.
 
 Then launch it once:
 
@@ -42,7 +39,7 @@ Then launch it once:
 open /Applications/URLBouncer.app
 ```
 
-A branch icon will appear in your menu bar.
+A branch icon will appear in your menu bar. This launch is also what registers URLBouncer with macOS's Launch Services (as a handler for `http`/`https` URLs) — no separate registration step is needed.
 
 ## Set as default browser
 
@@ -56,11 +53,8 @@ From this point on, every link clicked in any app will go through URLBouncer bef
 
 Your config file lives at `~/.config/urlbouncer/config.json`. The easiest way to open it is via the menu bar: **→ Open Config**.
 
-### v2 Config Format (Profiles)
-
-URLBouncer v2 introduces flexible profile definitions. Each profile specifies **how** to open a link: in a browser (with optional profile), in an application, or via a custom script.
-
-Profiles are defined in the `"profiles"` object. Each profile can be one of four types:
+URLBouncer has "profiles". Each profile specifies **how** to open a link: in a browser (with optional profile), in an application, or via a custom script. In a typical plain use-case, URLBouncer profiles correlate with browser profiles.
+These are defined in the `"profiles"` object. Each profile can be one of three types:
 
 #### 1. Browser Profile
 
@@ -202,7 +196,7 @@ Rules without `sourceApp` match links from any app. To discover an app's bundle 
 
 ### Finding your browser profiles
 
-Click the menu bar icon → **Manage Profiles** to see a dialog listing all detected browser profiles from Chrome, Firefox, and Opera. You can use the **Copy Profiles Block** button to generate a ready-to-paste JSON profiles block for your config.
+Click the menu bar icon → **Manage Profiles** to see a dialog listing all detected browser profiles. You can use the **Copy Profiles Block** button to generate a ready-to-paste JSON profiles block for your config.
 
 #### Chrome profiles
 
@@ -300,7 +294,7 @@ Look for `LSHandlerRoleAll = "com.local.urlbouncer";` next to `LSHandlerURLSchem
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -dump | grep -A 15 "com.local.urlbouncer"
 ```
 
-Shows the bundle path, version, and URL types Launch Services has on file. If this points at a stale path (e.g. after moving the app), re-run `make install` to re-register it.
+Shows the bundle path, version, and URL types Launch Services has on file. If this points at a stale path (e.g. after moving the app), just launch it again (`open /Applications/URLBouncer.app`) — launching is what registers it, there's no separate registration step.
 
 ### "Set as Default Browser" doesn't seem to do anything
 
@@ -335,7 +329,7 @@ If you added URLBouncer to Login Items, also remove it via System Settings → G
 
 If you only edited `~/.config/urlbouncer/config.json`, no action is needed — changes are live immediately.
 
-If you changed `src/main.swift`, rebuild and relaunch:
+If you changed the app, rebuild and relaunch:
 
 ```bash
 make install

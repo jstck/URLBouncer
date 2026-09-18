@@ -3,7 +3,6 @@ BUNDLE     := $(APP_NAME).app
 CONTENTS   := $(BUNDLE)/Contents
 MACOS_DIR  := $(CONTENTS)/MacOS
 RSRC_DIR   := $(CONTENTS)/Resources
-LSREGISTER := /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 BIN_DIR    := $(shell swift build -c release --show-bin-path)
 
 # `swift test` needs the Swift Testing framework, which lives under the active
@@ -33,7 +32,6 @@ bundle: build
 	@cp menuicon.png $(RSRC_DIR)/menuicon.png
 	@cp "menuicon@2x.png" "$(RSRC_DIR)/menuicon@2x.png"
 	codesign --force --sign - $(BUNDLE)
-	$(LSREGISTER) -f $(BUNDLE)
 	@echo ""
 	@echo "Built: $(BUNDLE)"
 	@echo "Run 'make install' to copy to /Applications"
@@ -42,7 +40,6 @@ install: bundle
 	@rm -rf /Applications/$(BUNDLE)
 	@cp -r $(BUNDLE) /Applications/$(BUNDLE)
 	codesign --force --sign - /Applications/$(BUNDLE)
-	$(LSREGISTER) -f /Applications/$(BUNDLE)
 	@echo ""
 	@echo "Installed: /Applications/$(BUNDLE)"
 	@echo ""
