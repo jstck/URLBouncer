@@ -1,18 +1,22 @@
 name: Release
 
+# Triggers when a release is published via GitHub's own UI/CLI (the release
+# and its tag already exist at that point) - this job attaches a built DMG
+# to it rather than trying to create a competing release for the same tag.
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  attach-dmg:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Run fast unit tests
         run: make test-fast
@@ -23,11 +27,21 @@ jobs:
       - name: Package as DMG
         run: hdiutil create -volname "URLBouncer" -srcfolder URLBouncer.app -ov -format UDZO URLBouncer.dmg
 
-      - name: Create GitHub Release
+      - name: Attach DMG to the release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" URLBouncer.dmg --clobber
+
+      # Append the unsigned-build note without touching whatever title/
+      # notes were already written when the release was created - only
+      # adds it once, even if this workflow re-runs for the same release.
+      - name: Note that the build is unsigned
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          gh release create "${{ github.ref_name }}" URLBouncer.dmg \
-            --title "${{ github.ref_name }}" \
-            --generate-notes \
-            --notes "**Unsigned build.** This isn't signed with an Apple Developer ID, so macOS will block it on first launch. To open it: try launching it once (it'll be blocked), then go to System Settings > Privacy & Security, find the block notice for URLBouncer near the bottom of the page, and click \"Open Anyway.\" Launch it again to confirm. See the README's Troubleshooting section for more."
+          BODY=$(gh release view "$TAG" --json body -q .body)
+          if [[ "$BODY" != *"Unsigned build"* ]]; then
+            { printf '%s\n\n' "$BODY"; cat .github/release-note-unsigned.md; } | gh release edit "$TAG" --notes-file -
+          fi
