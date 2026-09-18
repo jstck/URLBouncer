@@ -18,7 +18,7 @@ struct OpenerArgumentTests {
         let runner = FakeCommandRunner()
         openInChrome(url: "https://github.com", profile: nil, runner: runner, alertPresenter: FakeAlertPresenter())
         #expect(runner.launchInvocations == [
-            .init(executable: "/usr/bin/open", arguments: ["-na", "Google Chrome", "https://github.com"]),
+            .init(executable: "/usr/bin/open", arguments: ["-a", "Google Chrome", "https://github.com"]),
         ])
     }
 
@@ -81,7 +81,7 @@ struct OpenerArgumentTests {
         let runner = FakeCommandRunner()
         openInOpera(url: "https://example.com", profile: nil, runner: runner, alertPresenter: FakeAlertPresenter())
         #expect(runner.launchInvocations == [
-            .init(executable: "/usr/bin/open", arguments: ["-na", "Opera", "https://example.com"]),
+            .init(executable: "/usr/bin/open", arguments: ["-a", "Opera", "https://example.com"]),
         ])
     }
 
