@@ -39,11 +39,13 @@ Then launch it once:
 open /Applications/URLBouncer.app
 ```
 
-A branch icon will appear in your menu bar. This launch is also what registers URLBouncer with macOS's Launch Services (as a handler for `http`/`https` URLs) — no separate registration step is needed.
+A "trampoline" icon will appear in your menu bar. This launch is also what registers URLBouncer with macOS's Launch Services (as a handler for `http`/`https` URLs) — no separate registration step is needed.
+
+Binary files (in a DMG) are provided with release versions, if you'd rather do that. Just open the DMG and drag&drop URLBouncer to Applications. These binaries are however unsigned, so you will have to manually allow them to run.
 
 ## Set as default browser
 
-Click the menu bar icon → **Set as Default Browser**. This registers URLBouncer directly with macOS via the Launch Services API.
+Click the menu bar icon → **Set as Default Browser**. This registers URLBouncer directly with macOS via the Launch Services API, after a system popup confirming it.
 
 From this point on, every link clicked in any app will go through URLBouncer before reaching Chrome.
 

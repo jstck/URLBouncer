@@ -56,7 +56,7 @@ public struct RealAppOpener: AppOpening {
     public init() {}
 
     public func open(url: URL, applicationAt: URL) throws {
-        try NSWorkspace.shared.open([url], withApplicationAt: applicationAt, configuration: NSWorkspace.OpenConfiguration())
+        NSWorkspace.shared.open([url], withApplicationAt: applicationAt, configuration: NSWorkspace.OpenConfiguration())
     }
 }
 
