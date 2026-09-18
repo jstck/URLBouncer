@@ -15,8 +15,8 @@ public func openURL(_ url: String,
     }
 
     switch target {
-    case .browser(let name, let profile):
-        openInBrowser(url: url, browserName: name, profile: profile, runner: runner, appOpener: appOpener, alertPresenter: alertPresenter)
+    case .browser(let name, let profile, let isPrivate):
+        openInBrowser(url: url, browserName: name, profile: profile, isPrivate: isPrivate, runner: runner, appOpener: appOpener, alertPresenter: alertPresenter)
     case .app(let name, let path):
         openInApp(url: url, appName: name, appPath: path, runner: runner, appOpener: appOpener, alertPresenter: alertPresenter)
     case .executable(let path, let alertOnError):
@@ -29,6 +29,7 @@ public func openURL(_ url: String,
 public func openInBrowser(url: String,
                            browserName: String,
                            profile: String?,
+                           isPrivate: Bool = false,
                            runner: CommandRunning = RealCommandRunner(),
                            appOpener: AppOpening = RealAppOpener(),
                            alertPresenter: AlertPresenting = RealAlertPresenter()) {
@@ -36,13 +37,14 @@ public func openInBrowser(url: String,
 
     switch lowerBrowser {
     case "chrome":
-        openInChrome(url: url, profile: profile, runner: runner, alertPresenter: alertPresenter)
+        openInChrome(url: url, profile: profile, isPrivate: isPrivate, runner: runner, alertPresenter: alertPresenter)
     case "firefox":
-        openInFirefox(url: url, profile: profile, runner: runner, alertPresenter: alertPresenter)
+        openInFirefox(url: url, profile: profile, isPrivate: isPrivate, runner: runner, alertPresenter: alertPresenter)
     case "safari":
+        // Safari has no CLI mechanism for private windows, same as profiles - silently ignored.
         openInSafari(url: url, runner: runner, alertPresenter: alertPresenter)
     case "opera":
-        openInOpera(url: url, profile: profile, runner: runner, alertPresenter: alertPresenter)
+        openInOpera(url: url, profile: profile, isPrivate: isPrivate, runner: runner, alertPresenter: alertPresenter)
     default:
         // Try as generic app
         openInApp(url: url, appName: browserName, appPath: nil, runner: runner, appOpener: appOpener, alertPresenter: alertPresenter)
@@ -51,22 +53,24 @@ public func openInBrowser(url: String,
 
 public func openInChrome(url: String,
                           profile: String?,
+                          isPrivate: Bool = false,
                           runner: CommandRunning = RealCommandRunner(),
                           alertPresenter: AlertPresenting = RealAlertPresenter()) {
+    // -n forces a new process so --profile-directory/--incognito actually
+    // get delivered (see openInOpera below for the full explanation);
+    // without either flag there's nothing to force-deliver, so a plain
+    // launch hands off to whatever's already running unchanged.
+    var chromeArgs: [String] = []
+    if let profile = profile { chromeArgs.append("--profile-directory=\(profile)") }
+    if isPrivate { chromeArgs.append("--incognito") }
+
     let arguments: [String]
-    if let profile = profile {
-        // -n forces a new process so --profile-directory actually gets
-        // delivered (see openInOpera below for the full explanation).
-        arguments = ["-na", "Google Chrome", "--args", "--profile-directory=\(profile)", url]
-        logURL("Opened \(url) in Chrome profile '\(profile)'")
-    } else {
-        // No profile requested, so there's nothing that needs -n's
-        // "force a fresh process" behavior - just hand the URL to
-        // whatever's already running, exactly as if URLBouncer weren't
-        // involved at all.
+    if chromeArgs.isEmpty {
         arguments = ["-a", "Google Chrome", url]
-        logURL("Opened \(url) in Chrome (no profile)")
+    } else {
+        arguments = ["-na", "Google Chrome", "--args"] + chromeArgs + [url]
     }
+    logURL("Opened \(url) in Chrome" + (profile.map { " profile '\($0)'" } ?? " (no profile)") + (isPrivate ? " [incognito]" : ""))
     do {
         try runner.launch(executable: "/usr/bin/open", arguments: arguments)
     } catch {
@@ -79,16 +83,17 @@ public func openInChrome(url: String,
 
 public func openInFirefox(url: String,
                            profile: String?,
+                           isPrivate: Bool = false,
                            runner: CommandRunning = RealCommandRunner(),
                            alertPresenter: AlertPresenting = RealAlertPresenter()) {
-    let arguments: [String]
-    if let profile = profile {
-        arguments = ["-P", profile, url]
-        logURL("Opened \(url) in Firefox profile '\(profile)'")
-    } else {
-        arguments = [url]
-        logURL("Opened \(url) in Firefox (no profile)")
-    }
+    // -private-window takes the URL itself as its argument (replacing the
+    // plain trailing URL) rather than being a separate flag; Firefox's own
+    // remoting forwards it to an already-running instance correctly, so no
+    // extra "force a new process" trick is needed here (unlike Chrome/Opera).
+    var arguments: [String] = []
+    if let profile = profile { arguments += ["-P", profile] }
+    arguments += isPrivate ? ["-private-window", url] : [url]
+    logURL("Opened \(url) in Firefox" + (profile.map { " profile '\($0)'" } ?? " (no profile)") + (isPrivate ? " [private window]" : ""))
 
     do {
         try runner.launch(executable: "/Applications/Firefox.app/Contents/MacOS/firefox", arguments: arguments)
@@ -123,22 +128,25 @@ public func openInSafari(url: String,
 
 public func openInOpera(url: String,
                          profile: String?,
+                         isPrivate: Bool = false,
                          runner: CommandRunning = RealCommandRunner(),
                          alertPresenter: AlertPresenting = RealAlertPresenter()) {
+    // Opera uses --user-data-dir for profiles and --incognito for private
+    // windows. -na forces `open` to spawn a new process carrying these
+    // along; without it, if Opera is already running, macOS just
+    // re-activates that process and silently drops both (and the URL
+    // never opens at all) - same reasoning as Chrome above.
+    var operaArgs: [String] = []
+    if let profile = profile { operaArgs.append("--user-data-dir=\(profile)") }
+    if isPrivate { operaArgs.append("--incognito") }
+
     let arguments: [String]
-    if let profile = profile {
-        // Opera uses --user-data-dir for profiles. -na forces `open` to spawn
-        // a new process carrying this argument along; without it, if Opera
-        // is already running, macOS just re-activates that process and
-        // silently drops --user-data-dir (and the URL never opens at all).
-        arguments = ["-na", "Opera", "--args", "--user-data-dir=\(profile)", url]
-        logURL("Opened \(url) in Opera profile '\(profile)'")
-    } else {
-        // No profile requested - just hand off to whatever's already
-        // running, same reasoning as Chrome's no-profile branch above.
+    if operaArgs.isEmpty {
         arguments = ["-a", "Opera", url]
-        logURL("Opened \(url) in Opera (no profile)")
+    } else {
+        arguments = ["-na", "Opera", "--args"] + operaArgs + [url]
     }
+    logURL("Opened \(url) in Opera" + (profile.map { " profile '\($0)'" } ?? " (no profile)") + (isPrivate ? " [incognito]" : ""))
 
     do {
         try runner.launch(executable: "/usr/bin/open", arguments: arguments)

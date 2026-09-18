@@ -77,6 +77,11 @@ Open a URL in a specific browser with an optional profile:
     "opera_work": {
       "browser": "opera",
       "browserProfile": "/Users/john/Library/Application Support/com.operasoftware.Opera/work"
+    },
+    "chrome_work_private": {
+      "browser": "chrome",
+      "browserProfile": "Profile 1",
+      "private": true
     }
   }
 }
@@ -87,6 +92,8 @@ Open a URL in a specific browser with an optional profile:
 - `"firefox"` — Opens in Firefox with optional `browserProfile` (e.g., "default", "personal")
 - `"safari"` — Opens in Safari (note: `browserProfile` is ignored; Safari doesn't support CLI profile selection)
 - `"opera"` — Opens in Opera with optional `browserProfile` (full path to profile directory)
+
+**`"private"`** (optional, default `false`) — opens a private/incognito window instead of a normal one. Supported for Chrome, Firefox, and Opera (ignored for Safari, which has no such option). Can be combined with `browserProfile` — see [BROWSERS.md](BROWSERS.md#private-browsing) for what that combination actually means.
 
 #### 2. Application Profile
 

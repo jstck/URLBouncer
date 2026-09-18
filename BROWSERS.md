@@ -8,21 +8,33 @@ For each browser: what to put in `browserProfile`, what happens if you leave it 
 
 - `browserProfile`: the profile's **directory name** (e.g. `Default`, `Profile 1`) — find yours via **Manage Profiles** in the menu bar.
 - Profile discovery lists whatever profiles Chrome itself knows about (under `~/Library/Application Support/Google/Chrome/`), showing the account name/email when Chrome has one on file.
+- `"private": true` opens an Incognito window.
 
 ## Firefox
 
 - `browserProfile`: the profile's **name**, which isn't always the same as its folder name — find yours via **Manage Profiles**, or Firefox's own `about:profiles` page.
 - Profile discovery reads names the way Firefox itself does. If a profile doesn't show a friendly name, it was probably created manually rather than through Firefox's own profile manager — its raw folder name is shown instead, and that's still fine to use as-is.
+- `"private": true` opens a Private Window.
 
 ## Opera
 
 - `browserProfile`: the **full path** to the profile directory (not just a name — this is different from Chrome and Firefox). Find it via **Manage Profiles**.
 - Profile discovery lists Opera's own profile folders. If a profile you know exists doesn't show up, make sure you've actually opened a tab in it at least once — an unused profile folder isn't detected yet.
+- `"private": true` opens an Incognito window.
 
 ## Safari
 
 - `browserProfile` is accepted (so the same config shape works everywhere) but ignored — Safari has no way to select a profile from outside the app. Links always open in whatever Safari window is currently active.
 - Not listed in **Manage Profiles**, since there's nothing to detect.
+- `"private"` is also accepted but ignored, for the same reason — Safari has no way to open a Private Window from outside the app either.
+
+## Private browsing
+
+Set `"private": true` on a `browser` profile (Chrome, Firefox, or Opera — not Safari) to open a private/incognito window instead of a normal one.
+
+This can be combined with `browserProfile`, and the combination is meaningful, not redundant: the private window still has access to that profile's bookmarks, saved passwords/autofill, and any extensions that profile has allowed to run in private mode — but its cookies, logins, and history are entirely separate and temporary. You'll generally show up logged out on sites even if you're logged in on that profile's regular windows, and nothing from the private session is written back anywhere once it's closed.
+
+Without a `browserProfile` alongside `"private": true`, the private window opens against whatever profile is currently active — same pass-through behavior as leaving out `browserProfile` normally.
 
 ## Apps other than a browser
 

@@ -48,6 +48,36 @@ struct ResolveProfileTests {
         #expect(decoded["executable_with_alert"] == .executable(path: "/usr/local/bin/handler.sh", alertOnError: true))
     }
 
+    @Test func profileTargetDecodingPrivateDefaultsToFalse() throws {
+        let json = """
+        {"browser": "chrome", "browserProfile": "Profile 1"}
+        """
+        let decoded = try JSONDecoder().decode(ProfileTarget.self, from: Data(json.utf8))
+        #expect(decoded == .browser(name: "chrome", browserProfile: "Profile 1", isPrivate: false))
+    }
+
+    @Test func profileTargetDecodingPrivateTrue() throws {
+        let json = """
+        {"browser": "chrome", "browserProfile": "Profile 1", "private": true}
+        """
+        let decoded = try JSONDecoder().decode(ProfileTarget.self, from: Data(json.utf8))
+        #expect(decoded == .browser(name: "chrome", browserProfile: "Profile 1", isPrivate: true))
+    }
+
+    @Test func profileTargetEncodingOmitsPrivateKeyWhenFalse() throws {
+        let target = ProfileTarget.browser(name: "chrome", browserProfile: nil, isPrivate: false)
+        let data = try JSONEncoder().encode(target)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        #expect(json?["private"] == nil)
+    }
+
+    @Test func profileTargetEncodingIncludesPrivateKeyWhenTrue() throws {
+        let target = ProfileTarget.browser(name: "chrome", browserProfile: nil, isPrivate: true)
+        let data = try JSONEncoder().encode(target)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        #expect(json?["private"] as? Bool == true)
+    }
+
     @Test func profileTargetDecodingThrowsWithoutRecognizedKey() {
         let json = """
         {"unknownKey": "value"}
