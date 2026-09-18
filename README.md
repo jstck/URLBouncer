@@ -139,35 +139,11 @@ SOURCE_APP="$2"
 
 ### Complete Example Config
 
-```json
-{
-  "profiles": {
-    "work_chrome": {
-      "browser": "chrome",
-      "browserProfile": "Profile 1"
-    },
-    "personal_firefox": {
-      "browser": "firefox",
-      "browserProfile": "personal"
-    },
-    "docs_safari": {
-      "browser": "safari"
-    },
-    "send_to_script": {
-      "executable": "/usr/local/bin/url_handler.sh ${url}",
-      "alertOnError": true
-    }
-  },
-  "rules": [
-    {"match": "github.com", "profile": "work_chrome"},
-    {"match": "docs.google.com", "sourceApp": "Slack", "profile": "work_chrome"},
-    {"match": "youtube.com", "profile": "personal_firefox"},
-    {"match": "example.com", "profile": "docs_safari"},
-    {"match": "internal.company.com", "profile": "send_to_script"}
-  ],
-  "defaultProfile": "personal_firefox"
-}
-```
+[`example-config.json`](example-config.json) in this repo is a single config exercising all the profile types and match styles below — every browser, a generic app (by name and by path), a script, hostname/path/regex matching, `sourceApp`-only rules, and a `defaultProfile` fallback. It's a reference, not a starting point — see the next section for what a fresh install actually starts with.
+
+### What a fresh install starts with
+
+The first time URLBouncer runs with no `~/.config/urlbouncer/config.json` yet, it generates one with **no rules at all** — every link falls straight through to a `"default"` profile pointing at whatever browser was already your system default, so nothing about your browsing changes until you add rules yourself. If that browser has more than one profile, each one is also listed under `"profiles"` (named `chrome_<profile>`, `firefox_<profile>`, or `opera_<profile>`) as a starting point for writing rules against.
 
 ### Rules
 

@@ -1,0 +1,45 @@
+{
+  "profiles": {
+    "work": {
+      "browser": "chrome",
+      "browserProfile": "Profile 1"
+    },
+    "personal": {
+      "browser": "chrome",
+      "browserProfile": "Profile 2"
+    },
+    "personal_firefox": {
+      "browser": "firefox",
+      "browserProfile": "personal"
+    },
+    "docs_safari": {
+      "browser": "safari"
+    },
+    "work_opera": {
+      "browser": "opera",
+      "browserProfile": "/Users/you/Library/Application Support/com.operasoftware.Opera/work"
+    },
+    "notes_app": {
+      "app": "Notes"
+    },
+    "finder": {
+      "app": "Finder",
+      "appPath": "/System/Library/CoreServices/Finder.app"
+    },
+    "log_and_open": {
+      "executable": "/usr/local/bin/log_url.sh ${url} ${sourceApp}",
+      "alertOnError": true
+    }
+  },
+  "rules": [
+    {"match": "github.com", "profile": "work"},
+    {"match": "docs.google.com", "sourceApp": "Slack", "profile": "work"},
+    {"match": "docs.google.com/presentation", "profile": "work"},
+    {"sourceApp": "WhatsApp", "profile": "personal"},
+    {"sourceApp": "GlobalProtect", "profile": "work"},
+    {"match": "youtube.com", "profile": "personal_firefox"},
+    {"match": "re:^https://[^/]*\\.internal\\.example\\.com/", "profile": "work"},
+    {"match": "example.com", "profile": "docs_safari"}
+  ],
+  "defaultProfile": "personal"
+}

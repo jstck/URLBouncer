@@ -36,24 +36,24 @@ final class ConfigLoadingTests {
         #expect(config.profiles == nil)
     }
 
-    @Test func missingFileWithNoBundledDefaultFallsBackToEmptyConfig() {
+    @Test func missingFileGetsGeneratedFromInjectedGenerator() {
         let fileURL = tempDir.appendingPathComponent("does-not-exist.json")
-        let config = loadConfig(from: fileURL)
+        let config = loadConfig(from: fileURL, configGenerator: {
+            Config(rules: [], defaultProfile: "generated", profiles: ["generated": .browser(name: "safari", browserProfile: nil)])
+        })
         #expect(config.rules.isEmpty)
+        #expect(config.defaultProfile == "generated")
     }
 
-    @Test func ensureConfigCopiesBundledDefaultWhenFileMissing() throws {
-        let bundledDefault = tempDir.appendingPathComponent("bundled-default.json")
-        try """
-        {"rules": [], "defaultProfile": "from-bundle"}
-        """.write(to: bundledDefault, atomically: true, encoding: .utf8)
-
+    @Test func ensureConfigWritesGeneratedConfigWhenFileMissing() throws {
         let fileURL = tempDir.appendingPathComponent("subdir/config.json")
-        ensureConfig(at: fileURL, bundledDefault: bundledDefault)
+        ensureConfig(at: fileURL, configGenerator: {
+            Config(rules: [], defaultProfile: "from-generator", profiles: nil)
+        })
 
         #expect(FileManager.default.fileExists(atPath: fileURL.path))
         let config = loadConfig(from: fileURL)
-        #expect(config.defaultProfile == "from-bundle")
+        #expect(config.defaultProfile == "from-generator")
     }
 
     @Test func ensureConfigDoesNotOverwriteExistingFile() throws {
@@ -62,12 +62,9 @@ final class ConfigLoadingTests {
         {"rules": [], "defaultProfile": "existing"}
         """.write(to: fileURL, atomically: true, encoding: .utf8)
 
-        let bundledDefault = tempDir.appendingPathComponent("bundled-default.json")
-        try """
-        {"rules": [], "defaultProfile": "from-bundle"}
-        """.write(to: bundledDefault, atomically: true, encoding: .utf8)
-
-        ensureConfig(at: fileURL, bundledDefault: bundledDefault)
+        ensureConfig(at: fileURL, configGenerator: {
+            Config(rules: [], defaultProfile: "from-generator", profiles: nil)
+        })
 
         let config = loadConfig(from: fileURL)
         #expect(config.defaultProfile == "existing")
