@@ -314,3 +314,7 @@ open /Applications/URLBouncer.app
 ```
 
 Running `make install` will not overwrite your config.
+
+## License
+
+[MIT](LICENSE)
