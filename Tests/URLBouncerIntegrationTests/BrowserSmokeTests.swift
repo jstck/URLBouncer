@@ -70,17 +70,61 @@ final class BrowserSmokeTests {
         }
     }
 
+    /// Routes `url` to a **throwaway, isolated** browser profile - never the
+    /// user's real one - and verifies via `processMarker` (expected to
+    /// appear verbatim in the launched process's command line, e.g. a
+    /// `--profile-directory=` or `--user-data-dir=` value unique to this
+    /// test run) that a process actually started using it. Matching by
+    /// command-line marker rather than bundle ID is what makes this safe:
+    /// it can tell "a process for THIS specific throwaway profile appeared"
+    /// apart from "the app happens to already be running under some other,
+    /// unrelated (possibly the user's real) profile."
+    ///
+    /// This exists because the original design routed these tests through
+    /// the user's actual default profile (Chrome's "Default", Opera's only
+    /// real profile) - which, on every `make test-integration` run, opened
+    /// real tabs in the user's live browsing session, and in Opera's case
+    /// is suspected to have caused a "profile could not be opened
+    /// correctly" dialog from two processes contending over the same
+    /// actively-in-use profile directory.
+    private func verifyIsolatedProfileLaunch(configJSON: String, url: String, processMarker: String, cleanupPath: URL) throws {
+        restoreConfig = try TestSupport.backupAndReplaceRealConfig(with: Data(configJSON.utf8))
+        defer { try? FileManager.default.removeItem(at: cleanupPath) }
+
+        TestSupport.launchBuiltApp()
+        #expect(TestSupport.waitUntil(timeout: 10) { TestSupport.isBuiltAppRunning() })
+
+        TestSupport.sendURL(url)
+
+        var pids: [Int32] = []
+        let appeared = TestSupport.waitUntil(timeout: 10) {
+            pids = TestSupport.pids(matchingCommandLineSubstring: processMarker)
+            return !pids.isEmpty
+        }
+        #expect(appeared, "expected a process for the isolated profile '\(processMarker)' to appear")
+        for pid in pids {
+            kill(pid, SIGTERM)
+        }
+    }
+
     // MARK: Chrome
 
     @Test(.enabled(if: BrowserSmokeTests.builtAppExists && BrowserSmokeTests.isInstalled("chrome"),
                     "Chrome not installed or app not built"))
     func chromeProfileLaunch() throws {
+        let marker = "urlbouncer-smoke-chrome-\(UUID().uuidString.prefix(8))"
         let configJSON = """
-        {"profiles": {"p": {"browser": "chrome", "browserProfile": "Default"}},
+        {"profiles": {"p": {"browser": "chrome", "browserProfile": "\(marker)"}},
          "rules": [{"match": "urlbouncer-browsersmoke-chrome-profile.example", "profile": "p"}]}
         """
-        try verifyRealLaunch(bundleIdentifier: "com.google.Chrome", configJSON: configJSON,
-                              url: "https://urlbouncer-browsersmoke-chrome-profile.example")
+        // Chrome auto-creates a brand-new, empty profile for any
+        // --profile-directory name it hasn't seen before - never touches
+        // "Default" or any other real profile.
+        let profileDir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/Google/Chrome/\(marker)")
+        try verifyIsolatedProfileLaunch(configJSON: configJSON,
+                                         url: "https://urlbouncer-browsersmoke-chrome-profile.example",
+                                         processMarker: marker, cleanupPath: profileDir)
     }
 
     @Test(.enabled(if: BrowserSmokeTests.builtAppExists && BrowserSmokeTests.isInstalled("chrome"),
@@ -95,19 +139,19 @@ final class BrowserSmokeTests {
     }
 
     // MARK: Firefox
-
-    @Test(.enabled(if: BrowserSmokeTests.builtAppExists && BrowserSmokeTests.isInstalled("firefox"),
-                    "Firefox not installed or app not built"))
-    func firefoxProfileLaunch() throws {
-        let profiles = listFirefoxProfiles()
-        let profileArg = profiles.first?.dir ?? "default"
-        let configJSON = """
-        {"profiles": {"p": {"browser": "firefox", "browserProfile": "\(profileArg)"}},
-         "rules": [{"match": "urlbouncer-browsersmoke-firefox-profile.example", "profile": "p"}]}
-        """
-        try verifyRealLaunch(bundleIdentifier: "org.mozilla.firefox", configJSON: configJSON,
-                              url: "https://urlbouncer-browsersmoke-firefox-profile.example")
-    }
+    //
+    // No dedicated profile-launch smoke test: Firefox's `-P <name>` (the
+    // flag production code uses) requires a name already registered in the
+    // shared profiles.ini, or it falls back to an interactive "Choose User
+    // Profile" dialog - which is exactly what surfaced during development
+    // (a prior version of this test passed a profile *directory* name
+    // instead of its registered *name*, which is its own bug, but even a
+    // correctly-named throwaway profile can't be created here without
+    // running `firefox -CreateProfile`, which writes a new entry into the
+    // user's real, shared profiles.ini. That's more than this suite is
+    // willing to touch. `openInFirefox`'s exact `-P` argument construction
+    // is already covered by OpenerArgumentTests; firefoxPlainLaunch below
+    // covers a real, live Firefox launch end-to-end.
 
     @Test(.enabled(if: BrowserSmokeTests.builtAppExists && BrowserSmokeTests.isInstalled("firefox"),
                     "Firefox not installed or app not built"))
@@ -125,14 +169,17 @@ final class BrowserSmokeTests {
     @Test(.enabled(if: BrowserSmokeTests.builtAppExists && BrowserSmokeTests.isInstalled("opera"),
                     "Opera not installed or app not built"))
     func operaProfileLaunch() throws {
-        let profiles = listOperaProfiles()
-        let profileArg = profiles.first?.path ?? ""
+        let marker = "urlbouncer-smoke-opera-\(UUID().uuidString.prefix(8))"
+        let profileDir = FileManager.default.temporaryDirectory.appendingPathComponent(marker)
         let configJSON = """
-        {"profiles": {"p": {"browser": "opera", "browserProfile": "\(profileArg)"}},
+        {"profiles": {"p": {"browser": "opera", "browserProfile": "\(profileDir.path)"}},
          "rules": [{"match": "urlbouncer-browsersmoke-opera-profile.example", "profile": "p"}]}
         """
-        try verifyRealLaunch(bundleIdentifier: "com.operasoftware.Opera", configJSON: configJSON,
-                              url: "https://urlbouncer-browsersmoke-opera-profile.example")
+        // A brand-new --user-data-dir path Opera has never seen - never
+        // touches the user's real (and possibly only) "Default" profile.
+        try verifyIsolatedProfileLaunch(configJSON: configJSON,
+                                         url: "https://urlbouncer-browsersmoke-opera-profile.example",
+                                         processMarker: marker, cleanupPath: profileDir)
     }
 
     @Test(.enabled(if: BrowserSmokeTests.builtAppExists && BrowserSmokeTests.isInstalled("opera"),
