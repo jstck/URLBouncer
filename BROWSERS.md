@@ -108,3 +108,48 @@ Not implemented — there's nothing to discover, and "Manage Profiles" never sho
 ## Scripts (`"executable"` profile type)
 
 Not a browser launch at all: runs `/bin/bash -c "<command>"`, where `<command>` is the configured `executable` string with `${url}` and `${sourceApp}` substituted in, each wrapped in single quotes with proper shell escaping (a literal `'` in either value becomes `'\''`, so injection via either placeholder isn't possible).
+
+## Adding a browser not built in (Brave, Edge, Vivaldi, Opera GX, ...)
+
+There's no dedicated `"browser": "brave"` (etc.) support, and adding one for every Chromium fork isn't worth the code — the `"executable"` profile type already covers this with a one-line config entry, since it's just a raw command line with `${url}` substitution. Prefer it over the plain `"app"` type for this: `"app"` has no way to pass extra launch arguments at all (no `-n`, no profile flag), so it only gets you a bare, no-profile launch.
+
+The pattern to follow is the same one Chrome/Opera use above:
+
+- **With a profile:** `open -na "<App Name>" --args --profile-directory=<name> ${url}` (Chrome-family flag) or `open -na "<App Name>" --args --user-data-dir=<full path> ${url}` (Opera-family flag) — see per-browser notes below for which one applies.
+- **No profile:** `open -a "<App Name>" ${url}` — no `-n`, same "pure pass-through" reasoning as the built-in browsers.
+
+One `"executable"` entry per profile you want (there's no equivalent to the built-ins' single `browser`+`browserProfile` pair — you write one profiles-block entry per profile), e.g.:
+
+```json
+{
+  "profiles": {
+    "brave_work": {
+      "executable": "open -na \"Brave Browser\" --args --profile-directory=\"Profile 1\" ${url}"
+    },
+    "brave_personal": {
+      "executable": "open -na \"Brave Browser\" --args --profile-directory=\"Default\" ${url}"
+    }
+  }
+}
+```
+
+**None of the four below are installed on the machine this was written on, so none of this has been smoke-tested** — it's a best guess based on each being a Chromium fork with (mostly) the same CLI conventions Chrome/Opera already use, cross-checked against each vendor's own docs/community forums. Verify before relying on it:
+
+```bash
+# Confirm the exact app name and bundle identifier
+/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "/Applications/<App Name>.app/Contents/Info.plist"
+
+# Confirm the exact profile directory names that actually exist
+ls ~/Library/Application\ Support/<path from the table below>/
+```
+
+| Browser | App name | Profile flag | Profile directory |
+|---|---|---|---|
+| **Brave** | `Brave Browser` | `--profile-directory=<name>` (Chrome-family) | `~/Library/Application Support/BraveSoftware/Brave-Browser/` |
+| **Microsoft Edge** | `Microsoft Edge` | `--profile-directory=<name>` (Chrome-family) | `~/Library/Application Support/Microsoft Edge/` |
+| **Vivaldi** | `Vivaldi` | `--profile-directory=<name>` (Chrome-family) | `~/Library/Application Support/Vivaldi/` |
+| **Opera GX** | `Opera GX` | `--user-data-dir=<full path>` (Opera-family — a separate app/bundle from regular Opera, not a mode of it) | `~/Library/Application Support/com.operasoftware.OperaGX/` |
+
+One caveat specific to Edge, per Microsoft's own community forum: `--profile-directory` is reported to sometimes not be honored on macOS, instead reopening whatever profile was last active — apparently a real platform quirk, not something a config change here can work around.
+
+Sources consulted: [Brave Community - launching a specific profile](https://community.brave.app/t/can-i-open-a-new-brave-window-in-a-particular-profile-from-the-terminal/461211), [Brave Community - profile locations](https://community.brave.app/t/where-are-brave-profiles-and-their-usage-explained-in-detail/635674/21), [Microsoft Q&A - Edge profile-directory on macOS](https://learn.microsoft.com/en-us/answers/questions/2364072/macos-terminal-open-microsoft-edge-with-specific-p), [Vivaldi Forum - switching profiles on macOS](https://forum.vivaldi.net/topic/73984/how-to-open-a-specific-profile), [Vivaldi Help - User Profiles](https://help.vivaldi.com/desktop/tools/user-profiles/), [Opera Forums - Opera GX app data](https://forums.opera.com/topic/69377/opera-gx-app-data).
