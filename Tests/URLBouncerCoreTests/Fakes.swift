@@ -60,3 +60,9 @@ final class FakeAlertPresenter: AlertPresenting {
 }
 
 struct SimpleError: Error {}
+
+struct FakeDefaultBrowserQuery: DefaultBrowserQuerying {
+    var bundleID: String?
+
+    func currentDefaultHTTPHandlerBundleID() -> String? { bundleID }
+}
