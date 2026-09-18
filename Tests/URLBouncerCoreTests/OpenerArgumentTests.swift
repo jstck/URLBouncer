@@ -22,6 +22,22 @@ struct OpenerArgumentTests {
         ])
     }
 
+    @Test func chromePrivateWithoutProfile() {
+        let runner = FakeCommandRunner()
+        openInChrome(url: "https://github.com", profile: nil, isPrivate: true, runner: runner, alertPresenter: FakeAlertPresenter())
+        #expect(runner.launchInvocations == [
+            .init(executable: "/usr/bin/open", arguments: ["-na", "Google Chrome", "--args", "--incognito", "https://github.com"]),
+        ])
+    }
+
+    @Test func chromePrivateWithProfile() {
+        let runner = FakeCommandRunner()
+        openInChrome(url: "https://github.com", profile: "Profile 1", isPrivate: true, runner: runner, alertPresenter: FakeAlertPresenter())
+        #expect(runner.launchInvocations == [
+            .init(executable: "/usr/bin/open", arguments: ["-na", "Google Chrome", "--args", "--profile-directory=Profile 1", "--incognito", "https://github.com"]),
+        ])
+    }
+
     @Test func chromeLaunchFailureShowsAlertAndDoesNotThrowUpward() {
         let runner = FakeCommandRunner()
         runner.launchError = SimpleError()
@@ -46,6 +62,22 @@ struct OpenerArgumentTests {
         openInFirefox(url: "https://youtube.com", profile: nil, runner: runner, alertPresenter: FakeAlertPresenter())
         #expect(runner.launchInvocations == [
             .init(executable: "/Applications/Firefox.app/Contents/MacOS/firefox", arguments: ["https://youtube.com"]),
+        ])
+    }
+
+    @Test func firefoxPrivateWindowWithoutProfile() {
+        let runner = FakeCommandRunner()
+        openInFirefox(url: "https://youtube.com", profile: nil, isPrivate: true, runner: runner, alertPresenter: FakeAlertPresenter())
+        #expect(runner.launchInvocations == [
+            .init(executable: "/Applications/Firefox.app/Contents/MacOS/firefox", arguments: ["-private-window", "https://youtube.com"]),
+        ])
+    }
+
+    @Test func firefoxPrivateWindowWithProfile() {
+        let runner = FakeCommandRunner()
+        openInFirefox(url: "https://youtube.com", profile: "personal", isPrivate: true, runner: runner, alertPresenter: FakeAlertPresenter())
+        #expect(runner.launchInvocations == [
+            .init(executable: "/Applications/Firefox.app/Contents/MacOS/firefox", arguments: ["-P", "personal", "-private-window", "https://youtube.com"]),
         ])
     }
 
@@ -82,6 +114,40 @@ struct OpenerArgumentTests {
         openInOpera(url: "https://example.com", profile: nil, runner: runner, alertPresenter: FakeAlertPresenter())
         #expect(runner.launchInvocations == [
             .init(executable: "/usr/bin/open", arguments: ["-a", "Opera", "https://example.com"]),
+        ])
+    }
+
+    @Test func operaPrivateWithoutProfile() {
+        let runner = FakeCommandRunner()
+        openInOpera(url: "https://example.com", profile: nil, isPrivate: true, runner: runner, alertPresenter: FakeAlertPresenter())
+        #expect(runner.launchInvocations == [
+            .init(executable: "/usr/bin/open", arguments: ["-na", "Opera", "--args", "--incognito", "https://example.com"]),
+        ])
+    }
+
+    @Test func operaPrivateWithProfile() {
+        let runner = FakeCommandRunner()
+        openInOpera(url: "https://example.com", profile: "/path/to/profile", isPrivate: true, runner: runner, alertPresenter: FakeAlertPresenter())
+        #expect(runner.launchInvocations == [
+            .init(executable: "/usr/bin/open", arguments: ["-na", "Opera", "--args", "--user-data-dir=/path/to/profile", "--incognito", "https://example.com"]),
+        ])
+    }
+
+    // MARK: Dispatch (isPrivate passed through, ignored by Safari)
+
+    @Test func openInBrowserPassesIsPrivateThroughToChrome() {
+        let runner = FakeCommandRunner()
+        openInBrowser(url: "https://example.com", browserName: "chrome", profile: nil, isPrivate: true, runner: runner, alertPresenter: FakeAlertPresenter())
+        #expect(runner.launchInvocations == [
+            .init(executable: "/usr/bin/open", arguments: ["-na", "Google Chrome", "--args", "--incognito", "https://example.com"]),
+        ])
+    }
+
+    @Test func openInBrowserIgnoresIsPrivateForSafari() {
+        let runner = FakeCommandRunner()
+        openInBrowser(url: "https://example.com", browserName: "safari", profile: nil, isPrivate: true, runner: runner, alertPresenter: FakeAlertPresenter())
+        #expect(runner.launchInvocations == [
+            .init(executable: "/usr/bin/open", arguments: ["-a", "Safari", "https://example.com"]),
         ])
     }
 

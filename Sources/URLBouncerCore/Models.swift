@@ -28,13 +28,14 @@ public struct Rule: Codable {
 
 // ProfileTarget represents what to open: a browser with optional profile, an app, or a script
 public enum ProfileTarget: Codable, Equatable {
-    case browser(name: String, browserProfile: String?)
+    case browser(name: String, browserProfile: String?, isPrivate: Bool = false)
     case app(name: String, appPath: String?)
     case executable(path: String, alertOnError: Bool?)
 
     // Custom Codable to handle the object format from JSON
     enum CodingKeys: String, CodingKey {
         case browser, browserProfile, app, appPath, executable, alertOnError
+        case isPrivate = "private"
     }
 
     public init(from decoder: Decoder) throws {
@@ -42,7 +43,8 @@ public enum ProfileTarget: Codable, Equatable {
 
         if let browser = try container.decodeIfPresent(String.self, forKey: .browser) {
             let profile = try container.decodeIfPresent(String.self, forKey: .browserProfile)
-            self = .browser(name: browser, browserProfile: profile)
+            let isPrivate = try container.decodeIfPresent(Bool.self, forKey: .isPrivate) ?? false
+            self = .browser(name: browser, browserProfile: profile, isPrivate: isPrivate)
         } else if let app = try container.decodeIfPresent(String.self, forKey: .app) {
             let path = try container.decodeIfPresent(String.self, forKey: .appPath)
             self = .app(name: app, appPath: path)
@@ -58,10 +60,13 @@ public enum ProfileTarget: Codable, Equatable {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         switch self {
-        case .browser(let name, let profile):
+        case .browser(let name, let profile, let isPrivate):
             try container.encode(name, forKey: .browser)
             if let profile = profile {
                 try container.encode(profile, forKey: .browserProfile)
+            }
+            if isPrivate {
+                try container.encode(true, forKey: .isPrivate)
             }
         case .app(let name, let path):
             try container.encode(name, forKey: .app)
